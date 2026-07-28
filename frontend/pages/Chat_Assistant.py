@@ -1,0 +1,1 @@
+"""Chat assistant page placeholder."""

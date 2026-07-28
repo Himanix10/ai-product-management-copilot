@@ -1,0 +1,1 @@
+"""Theme extraction agent placeholder."""

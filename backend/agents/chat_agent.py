@@ -1,0 +1,1 @@
+"""Chat assistant agent placeholder."""

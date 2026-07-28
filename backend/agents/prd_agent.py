@@ -1,0 +1,1 @@
+"""PRD generation agent placeholder."""

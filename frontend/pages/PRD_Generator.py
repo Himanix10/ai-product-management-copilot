@@ -1,0 +1,1 @@
+"""PRD generator page placeholder."""
