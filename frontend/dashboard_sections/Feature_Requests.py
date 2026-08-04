@@ -52,7 +52,17 @@ except Exception:
 if rows:
     df = pd.DataFrame(rows)
     st.plotly_chart(
-        px.scatter(df, x="effort", y="reach", size="rice_score", color="priority", hover_name="name", title="Reach vs Effort"),
+        px.scatter(
+            df,
+            x="effort",
+            y="reach",
+            size="rice_score",
+            color="priority",
+            hover_name="name",
+            title="Reach vs Effort",
+            template="plotly_dark",
+            color_discrete_sequence=["#818cf8", "#c084fc", "#f472b6"]
+        ),
         use_container_width=True,
     )
     st.dataframe(

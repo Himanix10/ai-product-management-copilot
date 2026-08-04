@@ -1,21 +1,43 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from database.db import Base, engine
+from database.db import Base, engine, SessionLocal
 from database import models
+from database.seeder import seed_db
 
 from routers.workspace import router as workspace_router
+from routers.api import router as api_router
 
+# Ensure SQLite schema is created
 Base.metadata.create_all(bind=engine)
+
+# Auto-seed sample database records
+db = SessionLocal()
+try:
+    seed_db(db)
+finally:
+    db.close()
 
 app = FastAPI(
     title="AI Product Management Copilot"
 )
 
-app.include_router(workspace_router)
+# Enable CORS for Streamlit frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Include Routers
+app.include_router(workspace_router)
+app.include_router(api_router)
 
 @app.get("/")
 def root():
     return {
-        "message": "Backend Running"
+        "status": "online",
+        "message": "AI PM Copilot API Server Running"
     }

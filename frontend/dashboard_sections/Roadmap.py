@@ -49,5 +49,16 @@ sample = pd.DataFrame({
     "Feature": ["Feedback Clustering", "RICE Prioritization", "AI PRD Generator", "Analytics"],
     "Progress": [100, 75, 45, 15],
 })
-st.plotly_chart(px.bar(sample, x="Feature", y="Progress", color="Quarter", title="Initiative Progress"), use_container_width=True)
+st.plotly_chart(
+    px.bar(
+        sample,
+        x="Feature",
+        y="Progress",
+        color="Quarter",
+        title="Initiative Progress",
+        template="plotly_dark",
+        color_discrete_sequence=["#818cf8", "#c084fc", "#34d399", "#f472b6"]
+    ),
+    use_container_width=True
+)
 st.dataframe(sample, use_container_width=True, hide_index=True)
