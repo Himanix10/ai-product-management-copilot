@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 import os
 
-from database.db import get_db
-from database.models import (
+from ..database.db import get_db
+from ..database.models import (
     Feedback,
     Theme,
     Cluster,

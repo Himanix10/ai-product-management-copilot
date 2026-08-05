@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from crud.workspace import (
+from ..crud.workspace import (
     create_workspace,
     get_all_workspaces,
     get_workspace_by_id,
     delete_workspace,
 )
 
-from database.db import get_db
-from schemas.workspace import (
+from ..database.db import get_db
+from ..schemas.workspace import (
     WorkspaceCreate,
     WorkspaceResponse,
 )

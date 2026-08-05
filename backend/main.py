@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database.db import Base, engine, SessionLocal
-from database import models
-from database.seeder import seed_db
+from .database.db import Base, engine, SessionLocal
+from .database import models
+from .database.seeder import seed_db
 
-from routers.workspace import router as workspace_router
-from routers.api import router as api_router
+from .routers.workspace import router as workspace_router
+from .routers.api import router as api_router
 
 # Ensure SQLite schema is created
 Base.metadata.create_all(bind=engine)

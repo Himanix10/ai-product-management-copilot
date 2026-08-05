@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from database.models import Workspace
-from schemas.workspace import WorkspaceCreate
+from ..database.models import Workspace
+from ..schemas.workspace import WorkspaceCreate
 
 
 def create_workspace(db: Session, workspace: WorkspaceCreate):

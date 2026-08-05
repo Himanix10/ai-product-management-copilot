@@ -5,7 +5,7 @@ API = "http://127.0.0.1:8000"
 st.title("AI PRD Generator")
 st.caption("Convert a validated product problem into a structured Product Requirements Document.")
 
-with st.form("prd"):
+with st.form("prd_form"):
     feature = st.text_input("Feature Name")
     problem = st.text_area("Problem Statement")
     users = st.text_input("Target Users", "Existing product users")
@@ -38,12 +38,12 @@ if generate:
                 timeout=30,
             )
             r.raise_for_status()
-            st.session_state.prd = r.json()
+            st.session_state.prd_result = r.json()
         except Exception as e:
             st.error(f"Backend error: {e}")
 
-if "prd" in st.session_state:
-    p = st.session_state.prd
+if "prd_result" in st.session_state:
+    p = st.session_state.prd_result
     st.markdown(p["content"])
     st.download_button(
         "Download Markdown",

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from database.models import (
+from .models import (
     Workspace,
     UploadedDocument,
     Feedback,
