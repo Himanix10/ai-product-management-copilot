@@ -6,8 +6,13 @@ from typing import Dict
 import pandas as pd
 from sqlalchemy.orm import Session
 
-from .database.db import SessionLocal
-from .database.models import (
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from backend.database.db import SessionLocal
+from backend.database.models import (
     Cluster,
     Feedback,
     Priority,
@@ -16,8 +21,6 @@ from .database.models import (
     Workspace,
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
 XLSX_PATH = os.path.join(PROJECT_ROOT, "AI_PM_Copilot__Multi_Stakeholder_Dataset.xlsx")
 
 
