@@ -1,7 +1,7 @@
 import streamlit as st
-import requests
 
-API = "http://127.0.0.1:8000"
+from api_client import api_post
+
 st.title("AI PRD Generator")
 st.caption("Convert a validated product problem into a structured Product Requirements Document.")
 
@@ -22,8 +22,8 @@ if generate:
         st.error("Feature Name and Problem Statement are required.")
     else:
         try:
-            r = requests.post(
-                API + "/api/agents/generate-prd",
+            r = api_post(
+                "/api/agents/generate-prd",
                 json={
                     "feature_name": feature,
                     "problem_statement": problem,

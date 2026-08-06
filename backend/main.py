@@ -1,12 +1,19 @@
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database.db import Base, engine, SessionLocal
-from .database import models
-from .database.seeder import seed_db
+if __package__ is None:
+    repo_root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(repo_root))
 
-from .routers.workspace import router as workspace_router
-from .routers.api import router as api_router
+from backend.database.db import Base, engine, SessionLocal
+from backend.database import models
+from backend.database.seeder import seed_db
+
+from backend.routers.workspace import router as workspace_router
+from backend.routers.api import router as api_router
 
 # Ensure SQLite schema is created
 Base.metadata.create_all(bind=engine)

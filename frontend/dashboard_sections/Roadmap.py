@@ -1,9 +1,9 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 
-API = "http://127.0.0.1:8000"
+from api_client import api_post
+
 st.title("Product Roadmap")
 st.caption("Plan initiatives across quarters using AI recommendations.")
 
@@ -18,8 +18,8 @@ with st.form("roadmap"):
 
 if submit:
     try:
-        r = requests.post(
-            API + "/api/agents/roadmap",
+        r = api_post(
+            "/api/agents/roadmap",
             json={
                 "feature_name": feature or "New Initiative",
                 "priority": priority,

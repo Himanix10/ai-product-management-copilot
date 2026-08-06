@@ -1,7 +1,7 @@
 import streamlit as st
-import requests
 
-API = "http://127.0.0.1:8000"
+from api_client import api_post
+
 st.title("AI Product Manager Assistant")
 st.caption("Ask about prioritization, PRDs, roadmaps, themes and product strategy.")
 
@@ -24,7 +24,7 @@ if prompt:
 
     with st.chat_message("assistant"):
         try:
-            response = requests.post(API + "/api/orchestrate", json={"prompt": prompt}, timeout=30)
+            response = api_post("/api/orchestrate", json={"prompt": prompt}, timeout=30)
             response.raise_for_status()
             result = response.json()
             answer = result.get("response", result)

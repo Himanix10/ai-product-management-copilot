@@ -1,9 +1,8 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 
-API = "http://127.0.0.1:8000"
+from api_client import api_get
 
 st.title("Feedback Explorer")
 st.caption("Database Connected — Ingestion → Theme Extraction → Clustering → Reporting")
@@ -23,7 +22,7 @@ st.markdown(
 # Auto-fetch feedback data on first load
 if "feedback_result" not in st.session_state:
     try:
-        r = requests.get(API + "/api/feedback", timeout=10)
+        r = api_get("/api/feedback", timeout=10)
         if r.status_code == 200:
             st.session_state.feedback_result = r.json()
     except Exception:
@@ -32,7 +31,7 @@ if "feedback_result" not in st.session_state:
 if st.button("Fetch & Analyze Database Feedback", type="primary"):
     try:
         with st.spinner("Fetching records from Database & running agents..."):
-            r = requests.get(API + "/api/feedback", timeout=30)
+            r = api_get("/api/feedback", timeout=30)
             if r.status_code == 200:
                 st.session_state.feedback_result = r.json()
             else:

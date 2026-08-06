@@ -1,9 +1,9 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 
-API = "http://127.0.0.1:8000"
+from api_client import api_get, api_post
+
 st.title("Feature Requests")
 st.caption("RICE-based feature prioritization.")
 
@@ -22,8 +22,8 @@ if submit:
         st.error("Feature name is required.")
     else:
         try:
-            r = requests.post(
-                API + "/api/agents/prioritize",
+            r = api_post(
+                "/api/agents/prioritize",
                 json={
                     "name": name,
                     "description": description,
@@ -45,7 +45,7 @@ if "last_priority" in st.session_state:
     st.write(q["recommendation"])
 
 try:
-    rows = requests.get(API + "/api/features", timeout=5).json()
+    rows = api_get("/api/features", timeout=5).json()
 except Exception:
     rows = []
 

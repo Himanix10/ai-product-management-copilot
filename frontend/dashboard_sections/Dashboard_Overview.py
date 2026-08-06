@@ -1,9 +1,8 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.express as px
 
-API = "http://127.0.0.1:8000"
+from api_client import api_get
 
 # Fetch database metrics safely
 feedback_count = 0
@@ -17,7 +16,7 @@ feedback_result = None
 
 try:
     # 1. Fetch Feedback Summary
-    f_res = requests.get(API + "/api/feedback", timeout=5)
+    f_res = api_get("/api/feedback", timeout=5)
     if f_res.status_code == 200:
         feedback_result = f_res.json()
         feedback_count = feedback_result.get("record_count", 0)
@@ -25,7 +24,7 @@ try:
         themes_count = len(themes_df)
 
     # 2. Fetch Priorities List
-    p_res = requests.get(API + "/api/features", timeout=5)
+    p_res = api_get("/api/features", timeout=5)
     if p_res.status_code == 200:
         features_list = p_res.json()
         features_df = pd.DataFrame(features_list)
@@ -168,7 +167,7 @@ if prompt:
         
     with st.chat_message("assistant"):
         try:
-            r = requests.post(API + "/api/orchestrate", json={"prompt": prompt}, timeout=10)
+            r = api_post("/api/orchestrate", json={"prompt": prompt}, timeout=10)
             if r.status_code == 200:
                 answer = r.json().get("response", "No response received.")
             else:
