@@ -1,243 +1,163 @@
-import streamlit as st
-from pathlib import Path
-import importlib.util
+import sys
+import os
 
-import auth
-import importlib
-importlib.reload(auth)
-from auth import require_login
+# Dynamically resolve and register current directory to Python sys.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+import streamlit as st
+from auth import init_auth, render_login, render_sidebar
+from dashboard_sections import (
+    render_dashboard_overview,
+    render_feedback_explorer,
+    render_customer_pain_points,
+    render_prioritized_initiatives,
+    render_prd_generator,
+    render_roadmap
+)
 
 st.set_page_config(
-    page_title="AI PM Copilot",
+    page_title="AI Product Manager Copilot",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Minimalist High-Tech Dashboard Design System CSS (Icon-Free)
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-    
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    
-    /* Overall Background */
-    .stApp {
-        background-color: #07090e;
-        color: #e2e8f0;
-    }
-    
-    .block-container {
-        max-width: 1480px;
-        padding-top: 1.8rem;
-        padding-bottom: 3rem;
-    }
-    
-    /* Top Command Header */
-    .dashboard-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        margin-bottom: 1.5rem;
-    }
-    
-    .brand-tag {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        color: #6366f1;
-        background: rgba(99, 102, 241, 0.08);
-        border: 1px solid rgba(99, 102, 241, 0.25);
-        padding: 4px 10px;
-        border-radius: 4px;
-        display: inline-block;
-        margin-bottom: 8px;
-    }
-    
-    .header-title {
-        font-size: 2.1rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        color: #ffffff;
-        margin: 0;
-    }
+# Initialize Session & Auth State
+init_auth()
 
-    .header-desc {
-        color: #94a3b8;
-        font-size: 0.92rem;
-        margin-top: 4px;
-    }
+def render_fixed_right_chatbot():
+    """Renders a small fixed circular robot avatar button anchored at the right side."""
     
-    /* Clean Minimalist Tabs (Linear/Vercel style) */
-    div[data-baseweb="tab-list"] {
-        gap: 8px !important;
-        background: #0d111c !important;
-        padding: 6px !important;
-        border-radius: 10px !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        margin-bottom: 1.5rem !important;
-    }
+    st.markdown(
+        """
+        <style>
+        /* Fixed positioning container anchored to bottom right */
+        div[data-testid="stPopover"] {
+            position: fixed !important;
+            bottom: 30px !important;
+            right: 30px !important;
+            width: 60px !important;
+            height: 60px !important;
+            min-width: 60px !important;
+            max-width: 60px !important;
+            z-index: 999999 !important;
+        }
 
-    button[data-baseweb="tab"] {
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-size: 0.88rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.2px !important;
-        padding: 8px 18px !important;
-        border-radius: 6px !important;
-        color: #64748b !important;
-        background: transparent !important;
-        transition: all 0.15s ease !important;
-        border: none !important;
-    }
-    
-    button[data-baseweb="tab"]:hover {
-        color: #e2e8f0 !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-    }
-    
-    button[aria-selected="true"] {
-        color: #ffffff !important;
-        background: #1e293b !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
-    
-    div[data-baseweb="tab-highlight"] {
-        display: none !important;
-    }
-    
-    /* Dark Surface Containers & Forms */
-    div[data-testid="stForm"] {
-        background: #0d111c;
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
+        /* Lock internal base element dimensions */
+        div[data-testid="stPopover"] > div {
+            width: 60px !important;
+            height: 60px !important;
+        }
+        
+        /* Style popover trigger into a circular cyan robot button */
+        div[data-testid="stPopover"] button {
+            background: radial-gradient(circle at 35% 35%, #A7F3D0 0%, #38BDF8 60%, #0284C7 100%) !important;
+            color: #FFFFFF !important;
+            border-radius: 50% !important;
+            width: 60px !important;
+            height: 60px !important;
+            min-width: 60px !important;
+            max-width: 60px !important;
+            min-height: 60px !important;
+            max-height: 60px !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 2px solid #FFFFFF !important;
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out !important;
+            cursor: pointer !important;
+        }
 
-    /* Metric Cards */
-    [data-testid="stMetric"] {
-        background: #0d111c;
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 10px;
-        padding: 16px 20px;
-    }
-    
-    [data-testid="stMetricLabel"] {
-        color: #64748b;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-    }
-    
-    [data-testid="stMetricValue"] {
-        color: #f8fafc;
-        font-weight: 700;
-        font-size: 1.5rem;
-    }
+        /* Center icon inside button */
+        div[data-testid="stPopover"] button > div {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
 
-    /* High-Tech Slate Buttons */
-    div.stButton > button[kind="primary"],
-    div.stFormSubmitButton > button {
-        background: #4f46e5 !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        font-weight: 600 !important;
-        font-size: 0.88rem !important;
-        border-radius: 8px !important;
-        padding: 8px 20px !important;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3) !important;
-        transition: all 0.15s ease !important;
-    }
-    
-    div.stButton > button[kind="primary"]:hover,
-    div.stFormSubmitButton > button:hover {
-        background: #4338ca !important;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.45) !important;
-    }
+        div[data-testid="stPopover"] button p {
+            font-size: 28px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+        }
 
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #0b0e17 !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
-    }
+        /* Hover animation */
+        div[data-testid="stPopover"] button:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.8) !important;
+            border-color: #E0F2FE !important;
+        }
 
-    /* Input Controls */
-    input, textarea, select {
-        background-color: #07090e !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        color: #f1f5f9 !important;
-        border-radius: 6px !important;
-    }
-    
-    input:focus, textarea:focus, select:focus {
-        border-color: #6366f1 !important;
-        box-shadow: 0 0 0 1px #6366f1 !important;
-    }
+        /* Popover Chat Box Container */
+        div[data-testid="stPopoverBody"] {
+            width: 360px !important;
+            max-height: 480px !important;
+            border-radius: 16px !important;
+            padding: 14px !important;
+            background-color: #FFFFFF !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+            border: 1px solid #CBD5E1 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-    /* Dataframe Table Polish */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 8px;
-        overflow: hidden;
-    }
+    with st.popover("🤖"):
+        st.markdown("### 🤖 AI PM Copilot")
+        st.caption("Ask questions about VOC feedback, pain points, PRDs, or priorities.")
+        st.divider()
 
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar {
-        width: 5px;
-        height: 5px;
-    }
-    ::-webkit-scrollbar-track {
-        background: #07090e;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #1e293b;
-        border-radius: 3px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = [
+                {"role": "assistant", "content": "Hi! I am your AI Workspace Copilot. How can I assist you today?"}
+            ]
 
-require_login()
+        for message in st.session_state.chat_history:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
 
+        if prompt := st.chat_input("Ask a question...", key="fixed_chat_input"):
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.write(prompt)
 
+            with st.chat_message("assistant"):
+                reply = f"AI Copilot: Evaluated request '{prompt}'. Processing workspace telemetry..."
+                st.write(reply)
+                st.session_state.chat_history.append({"role": "assistant", "content": reply})
 
-section_names = [
-    "Dashboard Overview",
-    "Feedback Explorer",
-    "Feature Requests",
-    "PRD Generator",
-    "Roadmap",
-    "Chat Assistant",
-]
+if not st.session_state.authenticated:
+    render_login()
+else:
+    selected_page = render_sidebar()
 
-section_map = {
-    "Dashboard Overview": "Dashboard_Overview",
-    "Feedback Explorer": "Feedback_Explorer",
-    "Feature Requests": "Feature_Requests",
-    "PRD Generator": "PRD_Generator",
-    "Roadmap": "Roadmap",
-    "Chat Assistant": "Chat_Assistant",
-}
+    st.text_input("Search", label_visibility="collapsed", placeholder="Search VOC feedback, pain points, PRDs, and initiatives...")
 
-tabs = st.tabs(section_names)
+    # Main Router matching Customer Feedback
+    if selected_page == "Dashboard":
+        render_dashboard_overview()
+    elif selected_page in ["Customer Feedback", "Feedback & VOC Ingestion"]:
+        render_feedback_explorer()
+    elif selected_page == "Customer Pain Points":
+        render_customer_pain_points()
+    elif selected_page == "Prioritized Initiatives":
+        render_prioritized_initiatives()
+    elif selected_page == "PRD Generator":
+        render_prd_generator()
+    elif selected_page == "Roadmap Planner":
+        render_roadmap()
+    else:
+        render_feedback_explorer()
 
-for tab, section_name in zip(tabs, section_names):
-    with tab:
-        module_name = section_map[section_name]
-        module_path = Path(__file__).resolve().parent / "dashboard_sections" / f"{module_name}.py"
-        if module_path.exists():
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-        else:
-            st.error(f"Section module not found: {module_path}")
+    # Always render the constant small circular chatbot button on the right side
+    render_fixed_right_chatbot()
