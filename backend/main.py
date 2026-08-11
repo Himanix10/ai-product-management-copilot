@@ -1,50 +1,65 @@
-import sys
-from pathlib import Path
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel
+from typing import List, Dict, Any
+from sqlalchemy.orm import Session
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from backend.database.db import init_db, get_db
+from backend.agents.orchestrator_agent import OrchestratorAgent
+from backend.database.models import CustomerFeedback, OpportunityPrioritization
 
-if __package__ is None:
-    repo_root = Path(__file__).resolve().parent.parent
-    sys.path.insert(0, str(repo_root))
+app = FastAPI(title="AI PM Copilot API", version="1.0")
 
-from backend.database.db import Base, engine, SessionLocal
-from backend.database import models
-from backend.database.seeder import seed_db
+@app.on_event("startup")
+def startup():
+    init_db()
 
-from backend.routers.workspace import router as workspace_router
-from backend.routers.api import router as api_router
+orchestrator = OrchestratorAgent()
 
-# Ensure SQLite schema is created
-Base.metadata.create_all(bind=engine)
+class FeedbackPayload(BaseModel):
+    raw_feedback: List[Dict[str, Any]]
 
-# Auto-seed sample database records
-db = SessionLocal()
-try:
-    seed_db(db)
-finally:
-    db.close()
+class ChatPayload(BaseModel):
+    query: str
 
-app = FastAPI(
-    title="AI Product Management Copilot"
-)
+class RICEPayload(BaseModel):
+    initiative_title: str
+    reach: int
+    impact: float
+    confidence: float
+    effort: float
 
-# Enable CORS for Streamlit frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "AI PM Copilot Backend"}
 
-# Include Routers
-app.include_router(workspace_router)
-app.include_router(api_router)
+@app.post("/api/v1/run-pipeline")
+def run_pipeline(payload: FeedbackPayload, db: Session = Depends(get_db)):
+    result = orchestrator.run(payload.model_dump())
+    return result.data
 
-@app.get("/")
-def root():
-    return {
-        "status": "online",
-        "message": "AI PM Copilot API Server Running"
-    }
+@app.post("/api/v1/chat")
+def chat(payload: ChatPayload):
+    response = orchestrator.chat.run({"query": payload.query})
+    return response.data
+
+@app.post("/api/v1/prioritize")
+def prioritize_initiative(payload: RICEPayload, db: Session = Depends(get_db)):
+    score = (payload.reach * payload.impact * payload.confidence) / payload.effort if payload.effort > 0 else 0.0
+    
+    db_item = OpportunityPrioritization(
+        initiative_title=payload.initiative_title,
+        reach=payload.reach,
+        impact=payload.impact,
+        confidence=payload.confidence,
+        effort=payload.effort,
+        rice_score=score
+    )
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    
+    return {"priority_id": db_item.priority_id, "rice_score": round(score, 2)}
+
+@app.get("/api/v1/feedback")
+def get_feedback(db: Session = Depends(get_db)):
+    return db.query(CustomerFeedback).all()
