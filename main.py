@@ -1,65 +1,43 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any
-from sqlalchemy.orm import Session
+from typing import Optional
 
-from backend.database.db import init_db, get_db
-from backend.agents.orchestrator_agent import OrchestratorAgent
-from backend.database.models import CustomerFeedback, OpportunityPrioritization
-
-app = FastAPI(title="AI PM Copilot API", version="1.0")
-
-@app.on_event("startup")
-def startup():
-    init_db()
-
-orchestrator = OrchestratorAgent()
-
-class FeedbackPayload(BaseModel):
-    raw_feedback: List[Dict[str, Any]]
-
-class ChatPayload(BaseModel):
-    query: str
+app = FastAPI(title="AI PM Copilot API Service", version="1.0.0")
 
 class RICEPayload(BaseModel):
-    initiative_title: str
-    reach: int
+    title: str
+    reach: float
     impact: float
     confidence: float
     effort: float
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "AI PM Copilot Backend"}
+class ChatQuery(BaseModel):
+    prompt: str
 
-@app.post("/api/v1/run-pipeline")
-def run_pipeline(payload: FeedbackPayload, db: Session = Depends(get_db)):
-    result = orchestrator.run(payload.model_dump())
-    return result.data
+FEEDBACK_DATA = [
+    {"ID": 101, "Source": "Zendesk", "User": "Enterprise Lead", "Feedback": "Need faster PRD exports and bulk actions", "Category": "Feature Request"},
+    {"ID": 102, "Source": "Survey", "User": "Product Mgr", "Feedback": "UI navigation is crisp and modern", "Category": "Usability"},
+    {"ID": 103, "Source": "CRM", "User": "Tech Lead", "Feedback": "Add REST API webhooks for Jira synchronization", "Category": "Integration"},
+    {"ID": 104, "Source": "Email", "User": "SaaS Founder", "Feedback": "Dashboard queries experience latency delays", "Category": "Bug"},
+]
 
-@app.post("/api/v1/chat")
-def chat(payload: ChatPayload):
-    response = orchestrator.chat.run({"query": payload.query})
-    return response.data
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "AI PM Copilot Backend API"}
 
-@app.post("/api/v1/prioritize")
-def prioritize_initiative(payload: RICEPayload, db: Session = Depends(get_db)):
-    score = (payload.reach * payload.impact * payload.confidence) / payload.effort if payload.effort > 0 else 0.0
-    
-    db_item = OpportunityPrioritization(
-        initiative_title=payload.initiative_title,
-        reach=payload.reach,
-        impact=payload.impact,
-        confidence=payload.confidence,
-        effort=payload.effort,
-        rice_score=score
-    )
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    
-    return {"priority_id": db_item.priority_id, "rice_score": round(score, 2)}
+@app.get("/api/feedback")
+def get_feedback(category: Optional[str] = "All"):
+    if category and category != "All":
+        return [item for item in FEEDBACK_DATA if item["Category"] == category]
+    return FEEDBACK_DATA
 
-@app.get("/api/v1/feedback")
-def get_feedback(db: Session = Depends(get_db)):
-    return db.query(CustomerFeedback).all()
+@app.post("/api/priorities/rice")
+def calculate_rice(payload: RICEPayload):
+    if payload.effort <= 0:
+        raise HTTPException(status_code=400, detail="Effort must be > 0.")
+    score = (payload.reach * payload.impact * payload.confidence) / payload.effort
+    return {"title": payload.title, "score": round(score, 2)}
+
+@app.post("/api/chat")
+def handle_chat(query: ChatQuery):
+    return {"reply": f"AI Copilot: Processed request '{query.prompt}'"}
