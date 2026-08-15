@@ -1,36 +1,24 @@
-from backend.agents.base_agent import BaseAgent
 from typing import Dict, Any
-
-def calculate_rice(reach: int, impact: float, confidence: float, effort: float) -> float:
-    if effort <= 0:
-        return 0.0
-    return round((reach * impact * confidence) / effort, 2)
+from agents.base_agent import BaseAgent
+from backend.tools.scoring_tools import ScoringTools
+from backend.tools.db_tools import DBTools
 
 class PrioritizationAgent(BaseAgent):
     def __init__(self):
-        super().__init__(
-            name="RICE Scoring Agent",
-            system_prompt="Score feature initiatives using RICE methodology."
-        )
-        self.register_tool("calculate_rice", calculate_rice)
+        super().__init__("PrioritizationAgent")
 
-    def _process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        opportunities = input_data.get("opportunity_areas", [])
-        ranked = []
-        for opp in opportunities:
-            reach = opp["support_volume"] * 100
-            impact = 3.0 if "Performance" in opp["opportunity_title"] else 2.0
-            confidence = 0.85
-            effort = 2.0
-            score = self.execute_tool("calculate_rice", reach=reach, impact=impact, confidence=confidence, effort=effort)
-            ranked.append({
-                "priority_id": 500 + opp["cluster_id"],
-                "initiative_title": opp["opportunity_title"],
-                "reach": reach,
-                "impact": impact,
-                "confidence": confidence,
-                "effort": effort,
-                "rice_score": score
-            })
-        ranked.sort(key=lambda x: x["rice_score"], reverse=True)
-        return {"ranked_initiatives": ranked, "top_initiative": ranked[0] if ranked else None}
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        title = inputs.get("title", "Initiative")
+        reach = float(inputs.get("reach", 0))
+        impact = float(inputs.get("impact", 0))
+        confidence = float(inputs.get("confidence", 0))
+        effort = float(inputs.get("effort", 1))
+
+        score = ScoringTools.calculate_rice(reach, impact, confidence, effort)
+        DBTools.add_initiative(title, reach, impact, confidence, effort, score)
+
+        return {
+            "agent": self.agent_name,
+            "title": title,
+            "score": score
+        }

@@ -1,27 +1,34 @@
-from backend.agents.base_agent import BaseAgent
-from typing import Dict, Any, List
+from typing import Dict, Any
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from agents.base_agent import BaseAgent
 
-def sanitize_feedback(text: str) -> str:
-    return text.strip().replace("\n", " ")
+try:
+    nltk.data.find('sentiment/vader_lexicon.zip')
+except LookupError:
+    nltk.download('vader_lexicon', quiet=True)
 
 class IngestionAgent(BaseAgent):
     def __init__(self):
-        super().__init__(
-            name="VOC Ingestion Agent",
-            system_prompt="Standardize and clean raw customer feedback."
-        )
-        self.register_tool("sanitize_feedback", sanitize_feedback)
+        super().__init__("IngestionAgent")
+        self.sia = SentimentIntensityAnalyzer()
 
-    def _process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        raw_list: List[Dict[str, Any]] = input_data.get("raw_feedback", [])
-        cleaned = []
-        for idx, item in enumerate(raw_list, 1):
-            text = self.execute_tool("sanitize_feedback", text=item.get("content", item.get("feedback_text", "")))
-            cleaned.append({
-                "feedback_id": item.get("id", idx),
-                "user_persona": item.get("user_persona", "Enterprise User"),
-                "feedback_text": text,
-                "channel": item.get("channel", "Zendesk"),
-                "timestamp": item.get("timestamp", "2026-08-01")
-            })
-        return {"processed_feedback": cleaned, "total_records": len(cleaned)}
+    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        raw_text = inputs.get("text", "")
+        category = inputs.get("category", "General")
+
+        cleaned_text = " ".join(raw_text.strip().split())
+
+        llm_category = self.invoke_llm(
+            "Classify feedback into exactly one of: Feature Request, Usability, Bug, or Integration. Return only the category name.",
+            cleaned_text
+        )
+        final_category = llm_category if llm_category and llm_category in ["Feature Request", "Usability", "Bug", "Integration"] else category
+        sentiment = self.sia.polarity_scores(cleaned_text)["compound"]
+
+        return {
+            "agent": self.agent_name,
+            "cleaned_text": cleaned_text,
+            "classified_category": final_category,
+            "sentiment_score": round(sentiment, 2)
+        }
