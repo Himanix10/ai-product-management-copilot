@@ -1,25 +1,25 @@
 import streamlit as st
-import pandas as pd
+from backend.database.db import fetch_customer_feedback_db, insert_customer_feedback_db
+from agents.ingestion_agent import IngestionAgent
 
-def render_feedback_explorer():
-    st.title("Customer Feedback")
+def render_customer_feedback():
+    st.title("Feedback Explorer")
     st.caption("Filter and inspect raw customer feedback records")
-    
     col_s1, col_s2 = st.columns([3, 1])
-    search_query = col_s1.text_input("Search Feedback...", placeholder="Filter keywords...")
-    category = col_s2.selectbox("Category", ["All", "Feature Request", "Usability", "Bug", "Integration"])
-
-    voc_data = pd.DataFrame([
-        {"ID": 101, "Source": "Zendesk", "User": "Enterprise Lead", "Feedback": "Need faster PRD exports and bulk actions", "Category": "Feature Request"},
-        {"ID": 102, "Source": "Survey", "User": "Product Mgr", "Feedback": "UI navigation is crisp and modern", "Category": "Usability"},
-        {"ID": 103, "Source": "CRM", "User": "Tech Lead", "Feedback": "Add REST API webhooks for Jira synchronization", "Category": "Integration"},
-        {"ID": 104, "Source": "Email", "User": "SaaS Founder", "Feedback": "Dashboard queries experience latency delays", "Category": "Bug"},
-    ])
-
-    if search_query:
-        voc_data = voc_data[voc_data["Feedback"].str.contains(search_query, case=False)]
-
-    if category != "All":
-        voc_data = voc_data[voc_data["Category"] == category]
-
+    search_query = col_s1.text_input("Search Feedback Text...", placeholder="Filter keywords...")
+    category = col_s2.selectbox("Filter Category", ["All", "Feature Request", "Usability", "Bug", "Integration"])
+    voc_data = fetch_customer_feedback_db(category=category, search_query=search_query)
     st.dataframe(voc_data, use_container_width=True)
+    with st.expander("➕ Ingest New Feedback Record"):
+        with st.form("add_feedback_form"):
+            src = st.selectbox("Source Channel", ["Zendesk", "Survey", "CRM", "Email", "GitHub"])
+            u_role = st.text_input("User Persona/Role", value="Enterprise Lead")
+            f_text = st.text_area("Feedback Narrative")
+            cat_tag = st.selectbox("Category Tag", ["Feature Request", "Usability", "Bug", "Integration"])
+            if st.form_submit_button("Submit Record to DB"):
+                if f_text.strip():
+                    ingest_agent = IngestionAgent()
+                    res = ingest_agent.execute({"text": f_text, "category": cat_tag, "source": src, "user_type": u_role})
+                    insert_customer_feedback_db(src, u_role, res["cleaned_text"], res["classified_category"])
+                    st.success(f"Record saved into database! Sentiment Polarity: {res['sentiment_score']}")
+                    st.rerun()

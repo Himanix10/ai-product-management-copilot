@@ -1,204 +1,182 @@
-import streamlit as st
+import sqlite3
+import bcrypt
 import re
-import urllib.parse
-import requests
+import streamlit as st
+from backend.config import config
 
-def init_auth():
-    """Initialize session state variables for authentication state."""
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if "user" not in st.session_state:
-        st.session_state.user = None
-    if "user_db" not in st.session_state:
-        st.session_state.user_db = {
-            "admin": {"email": "user@enterprise.com", "password": "password123", "role": "Product Manager"},
-            "user@enterprise.com": {"username": "admin", "password": "password123", "role": "Product Manager"}
-        }
 
 def validate_email(email: str) -> bool:
-    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    return re.match(pattern, email) is not None
+    return re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email) is not None
 
-def get_google_auth_url():
+
+def validate_password_complexity(password: str) -> bool:
+    return len(password) >= 6
+
+
+def authenticate_user(login_key: str, password_raw: str):
+    conn = sqlite3.connect(config.DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, username, email, password_hash, role FROM users WHERE username = ? OR email = ?",
+        (login_key, login_key),
+    )
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        stored_hash = user[3].encode("utf-8")
+        if bcrypt.checkpw(password_raw.encode("utf-8"), stored_hash):
+            return {"id": user[0], "username": user[1], "email": user[2], "role": user[4]}
+    return None
+
+
+def register_user(username: str, email: str, password_raw: str):
+    conn = sqlite3.connect(config.DATABASE_PATH)
+    cursor = conn.cursor()
+    pwd_hash = bcrypt.hashpw(password_raw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     try:
-        client_id = st.secrets["google_oauth"]["client_id"]
-        redirect_uri = st.secrets["google_oauth"]["redirect_uri"]
-    except Exception:
-        client_id = "YOUR_GOOGLE_CLIENT_ID"
-        redirect_uri = "http://localhost:8501"
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+            (username, email, pwd_hash),
+        )
+        conn.commit()
+        return True, "Account registered successfully!"
+    except sqlite3.IntegrityError:
+        return False, "Username or Email already registered."
+    finally:
+        conn.close()
 
-    params = {
-        "client_id": client_id,
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": "openid email profile",
-        "access_type": "offline",
-        "prompt": "consent"
-    }
-    return f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
 
-def handle_google_callback():
-    query_params = st.query_params
-    if "code" in query_params and not st.session_state.get("authenticated", False):
-        code = query_params["code"]
-        try:
-            client_id = st.secrets["google_oauth"]["client_id"]
-            client_secret = st.secrets["google_oauth"]["client_secret"]
-            redirect_uri = st.secrets["google_oauth"]["redirect_uri"]
+def init_auth():
+    st.session_state.setdefault("authenticated", False)
+    st.session_state.setdefault("user", None)
 
-            token_url = "https://oauth2.googleapis.com/token"
-            token_data = {
-                "code": code,
-                "client_id": client_id,
-                "client_secret": client_secret,
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            }
-            token_res = requests.post(token_url, data=token_data)
-            token_res.raise_for_status()
-            access_token = token_res.json().get("access_token")
 
-            if access_token:
-                user_info_res = requests.get(
-                    "https://www.googleapis.com/oauth2/v2/userinfo",
-                    headers={"Authorization": f"Bearer {access_token}"}
-                )
-                user_info_res.raise_for_status()
-                user_data = user_info_res.json()
+def _google_button():
+    if st.button("Continue with Google", use_container_width=True, key="google_login"):
+        st.info("Google sign-in is a visual placeholder. Connect OAuth credentials to enable it.")
 
-                email = user_data.get("email")
-                name = user_data.get("name", email.split("@")[0] if email else "User")
-
-                st.session_state.authenticated = True
-                st.session_state.user = {
-                    "name": name,
-                    "email": email,
-                    "role": "Product Manager",
-                    "auth_provider": "Google"
-                }
-                st.query_params.clear()
-                st.rerun()
-        except Exception as e:
-            st.error(f"Google Authentication failed: {str(e)}")
 
 def render_login():
-    handle_google_callback()
-
-    st.markdown("<h1 style='text-align: center;'>AI Product Manager</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #64748B;'>COPILOT WORKSPACE</p>", unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        tab_login, tab_signup = st.tabs(["Sign In", "Sign Up"])
-
-        google_url = get_google_auth_url()
-        google_button_html = f"""
-        <a href="{google_url}" target="_self" style="text-decoration: none;">
-            <div style="display: flex; align-items: center; justify-content: center; border: 1px solid #CBD5E1; border-radius: 8px; padding: 10px; background-color: #FFFFFF; cursor: pointer; margin-bottom: 15px;">
-                <span style="color: #1E293B; font-weight: 600; font-size: 14px;">{{label}}</span>
-            </div>
-        </a>
+    st.markdown(
         """
+        <style>
+        .login-shell {
+            width: 100%;
+            max-width: 555px;
+            margin: 5rem auto 0;
+        }
+        .login-brand {
+            text-align: center;
+            color: #667085;
+            font-size: .88rem;
+            letter-spacing: .01em;
+            margin-bottom: 1.15rem;
+        }
+        .login-or {
+            text-align: center;
+            color: #94a3b8;
+            font-size: .78rem;
+            margin: 1rem 0;
+        }
+        .login-form-card {
+            border: 1px solid #bfd0e1;
+            border-radius: 8px;
+            padding: .85rem .9rem .8rem;
+            background: rgba(255,255,255,.05);
+        }
+        </style>
+        <div class="login-shell">
+            <div class="login-brand">COPILOT WORKSPACE</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        with tab_login:
-            st.markdown(google_button_html.format(label="Continue with Google"), unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 12px;'>— OR —</p>", unsafe_allow_html=True)
+    _, center, _ = st.columns([1, 2, 1])
+    with center:
+        login_tab, signup_tab = st.tabs(["Sign In", "Sign Up"])
 
-            with st.form("login_form"):
-                login_input = st.text_input("Username or Email", placeholder="user@enterprise.com")
+        with login_tab:
+            _google_button()
+            st.markdown('<div class="login-or">— OR —</div>', unsafe_allow_html=True)
+            with st.form("login_form", clear_on_submit=False):
+                login_input = st.text_input(
+                    "Username or Email",
+                    placeholder="pradeepthi or pradeepthi297@gmail.com",
+                )
                 password = st.text_input("Password", type="password")
-                submit_login = st.form_submit_button("Sign In", use_container_width=True, type="primary")
-
-                if submit_login:
+                if st.form_submit_button("Sign In", use_container_width=True, type="primary"):
                     login_key = login_input.strip().lower()
-                    user_db = st.session_state.user_db
-
-                    if not login_key or not password:
-                        st.error("Please fill in all required fields.")
-                    elif login_key in user_db and user_db[login_key]["password"] == password:
-                        user_info = user_db[login_key]
+                    user = authenticate_user(login_key, password)
+                    if user:
                         st.session_state.authenticated = True
-                        st.session_state.user = {
-                            "name": user_info.get("username", login_key),
-                            "email": user_info.get("email", login_key),
-                            "role": user_info.get("role", "Product Manager"),
-                            "auth_provider": "Email"
-                        }
-                        st.success("Authentication successful!")
+                        st.session_state.user = user
                         st.rerun()
                     else:
-                        st.error("Invalid username/email or password.")
+                        st.error("Invalid credentials. Check your username/email and password.")
 
-        with tab_signup:
-            st.markdown(google_button_html.format(label="Sign Up with Google"), unsafe_allow_html=True)
-            st.markdown("<p style='text-align: center; color: #94A3B8; font-size: 12px;'>— OR —</p>", unsafe_allow_html=True)
-
+        with signup_tab:
+            st.markdown('<div class="login-or">Create your Copilot Workspace account</div>', unsafe_allow_html=True)
             with st.form("signup_form"):
-                new_username = st.text_input("Username", placeholder="e.g. alex_pm")
-                new_email = st.text_input("Email Address", placeholder="e.g. alex@enterprise.com")
+                new_username = st.text_input("Username", placeholder="e.g. pradeepthi")
+                new_email = st.text_input("Email", placeholder="e.g. user@enterprise.com")
                 new_password = st.text_input("Password", type="password")
                 confirm_password = st.text_input("Confirm Password", type="password")
-                submit_signup = st.form_submit_button("Create Account", use_container_width=True, type="primary")
-
-                if submit_signup:
-                    username_clean = new_username.strip().lower()
-                    email_clean = new_email.strip().lower()
-                    user_db = st.session_state.user_db
-
-                    if not username_clean or not email_clean or not new_password:
+                if st.form_submit_button("Create Account", use_container_width=True, type="primary"):
+                    u_clean = new_username.strip().lower()
+                    e_clean = new_email.strip().lower()
+                    if not u_clean or not e_clean or not new_password:
                         st.error("All fields are required.")
-                    elif not validate_email(email_clean):
-                        st.error("Please enter a valid email address.")
+                    elif not validate_email(e_clean):
+                        st.error("Please enter a valid email.")
+                    elif not validate_password_complexity(new_password):
+                        st.error("Password must be at least 6 characters.")
                     elif new_password != confirm_password:
                         st.error("Passwords do not match.")
-                    elif len(new_password) < 6:
-                        st.error("Password must be at least 6 characters long.")
-                    elif username_clean in user_db or email_clean in user_db:
-                        st.error("Username or email already registered.")
                     else:
-                        account_data = {
-                            "username": username_clean,
-                            "email": email_clean,
-                            "password": new_password,
-                            "role": "Product Manager"
-                        }
-                        st.session_state.user_db[username_clean] = account_data
-                        st.session_state.user_db[email_clean] = account_data
-                        st.success("Account created successfully! Please switch to 'Sign In'.")
+                        success, msg = register_user(u_clean, e_clean, new_password)
+                        if success:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+
 
 def render_sidebar():
-    """Render persistent sidebar with Customer Feedback label."""
     with st.sidebar:
-        st.markdown("<h3 style='margin-bottom: 0px;'>AI Product Manager</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='font-size: 11px; color: #6366F1; font-weight: 600; margin-top: -5px;'>COPILOT</p>", unsafe_allow_html=True)
+        st.markdown('<div class="pm-brand">AI Product Manager</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pm-copilot-label">COPILOT</div>', unsafe_allow_html=True)
         st.divider()
 
+        pages = [
+            "Dashboard",
+            "Feedback & VOC Ingestion",
+            "Customer Pain Points",
+            "Prioritized Initiatives",
+            "PRD Generator",
+            "Roadmap Planner",
+        ]
         page = st.radio(
             "Navigation",
-            [
-                "Dashboard",
-                "Customer Feedback",
-                "Customer Pain Points",
-                "Prioritized Initiatives",
-                "PRD Generator",
-                "Roadmap Planner"
-            ],
-            key="navigation_radio_updated",
-            label_visibility="collapsed"
+            pages,
+            key="nav_sidebar_radio",
+            label_visibility="collapsed",
         )
 
         st.divider()
-
-        if st.session_state.user:
-            st.caption("Settings")
-            with st.container(border=True):
-                user = st.session_state.user
-                st.markdown(f"**{user.get('name', 'User')}**")
-                st.caption(f"{user.get('email', '')}")
-                st.caption(f"Provider: {user.get('auth_provider', 'Email')}")
-                if st.button("Sign Out", use_container_width=True):
-                    st.session_state.authenticated = False
-                    st.session_state.user = None
-                    st.rerun()
-
+        st.caption("Settings")
+        user = st.session_state.user or {}
+        st.markdown(
+            f"""
+            <div class="pm-user-card">
+                <div style="font-weight:750; color:#273244;">{user.get('username', 'User')}</div>
+                <div style="margin-top:.55rem; color:#7590aa; text-decoration:underline;">{user.get('email', '')}</div>
+                <div style="margin-top:.7rem; color:#7b8797; font-size:.82rem;">Provider: Email</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button("Sign Out", use_container_width=True, key="sign_out"):
+            st.session_state.authenticated = False
+            st.session_state.user = None
+            st.rerun()
     return page

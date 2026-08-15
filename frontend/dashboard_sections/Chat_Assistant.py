@@ -1,24 +1,29 @@
 import streamlit as st
+from agents.chat_agent import ChatAgent
+from backend.memory.conversation_memory import ConversationMemory
 
 def render_chat_assistant():
-    st.title("AI Chat Assistant")
-    st.caption("Ask about prioritization, PRDs, roadmaps, themes and product strategy.")
+    st.title("Dedicated Chat Assistant")
+    st.caption("Interactive product copilot powered by Google Gemini and persistent SQLite conversation memory")
+    
+    col_a, col_b = st.columns([5, 1])
+    with col_b:
+        if st.button("Clear Memory", use_container_width=True):
+            ConversationMemory.clear_memory()
+            st.rerun()
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "I am your AI PM Workspace Copilot. Try asking 'What are the main feedback themes?' or 'Show priorities'."}
-        ]
+    chat_history = ConversationMemory.get_history()
+    for message in chat_history:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-
-    if prompt := st.chat_input("Ask a product management question..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    if prompt := st.chat_input("Ask about features, feedback, or roadmaps...", key="chat_page_input"):
+        ConversationMemory.add_message("user", prompt)
         with st.chat_message("user"):
             st.write(prompt)
-
         with st.chat_message("assistant"):
-            reply = f"AI PM Copilot: Evaluated '{prompt}'. Delegating task across sub-agents."
+            chat_agent = ChatAgent()
+            res = chat_agent.execute({"prompt": prompt})
+            reply = res["response"]
             st.write(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
+            ConversationMemory.add_message("assistant", reply)

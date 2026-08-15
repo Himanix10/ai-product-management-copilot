@@ -1,37 +1,126 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
+
+from agents.analytics_agent import AnalyticsAgent
+from backend.database.db import (
+    get_feedback_monthly_counts,
+    get_pain_point_summary,
+)
+
 
 def render_dashboard_overview():
-    st.title("Dashboard")
-    st.caption("Real-time product metrics, customer feedback, and initiative telemetry")
-    
-    # Specific KPI terminology replacing vague labels
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("VOC FEEDBACK VOL", "1,420", delta="+12%")
-    m2.metric("CUSTOMER PAIN POINTS", "4 Active", delta="Clusters")
-    m3.metric("PRIORITIZED INITIATIVES", "3", delta="Scored")
-    m4.metric("PRD SPECIFICATIONS", "1 Approved", delta="Draft")
-    m5.metric("ROADMAP SCHEDULE", "Q3 2026", delta="Active")
-    
-    st.divider()
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Customer Feedback Volume Trend")
-        df_trend = pd.DataFrame({
-            "Month": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
-            "Feedback Volume": [450, 620, 810, 980, 1150, 1300, 1420]
-        })
-        fig_line = px.line(df_trend, x="Month", y="Feedback Volume", markers=True, color_discrete_sequence=["#6366F1"])
-        fig_line.update_layout(template="plotly_white", height=320)
-        st.plotly_chart(fig_line, use_container_width=True)
 
-    with col2:
-        st.subheader("Customer Pain Points Summary")
-        df_pain = pd.DataFrame({
-            "Pain Point Area": ["Performance & Speed", "PRD Automation", "UI / UX Friction", "Integrations"],
-            "Support Volume": [440, 370, 320, 270]
-        })
-        fig_bar = px.bar(df_pain, x="Support Volume", y="Pain Point Area", orientation="h", color="Support Volume", color_continuous_scale="Purples")
-        fig_bar.update_layout(template="plotly_white", height=320, showlegend=False)
-        st.plotly_chart(fig_bar, use_container_width=True)
+    st.title("Dashboard Overview")
+
+    st.caption(
+        "Real-time product metrics, customer feedback, "
+        "pain points, initiatives and roadmap telemetry"
+    )
+
+    # ---------------------------------------------------------
+    # DATABASE KPIs
+    # ---------------------------------------------------------
+
+    agent = AnalyticsAgent()
+    metrics = agent.execute({})
+
+    m1, m2, m3, m4, m5 = st.columns(5)
+
+    m1.metric(
+        "VOC FEEDBACK",
+        f"{metrics['feedback_count']:,}",
+    )
+
+    m2.metric(
+        "PAIN POINTS",
+        f"{metrics['active_pain_points']:,}",
+    )
+
+    m3.metric(
+        "INITIATIVES",
+        f"{metrics['scored_initiatives']:,}",
+    )
+
+    m4.metric(
+        "PRDs",
+        f"{metrics['approved_prds']:,}",
+    )
+
+    m5.metric(
+        "ROADMAP ACTIVE",
+        f"{metrics['active_roadmap_items']:,}",
+    )
+
+    st.divider()
+
+    # ---------------------------------------------------------
+    # FEEDBACK TREND FROM DATABASE
+    # ---------------------------------------------------------
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+
+        st.subheader(
+            "Customer Feedback Volume Trend"
+        )
+
+        chart_data = get_feedback_monthly_counts()
+
+        if chart_data.empty:
+
+            st.info(
+                "No timestamped feedback data available."
+            )
+
+        else:
+
+            chart_data = chart_data.set_index(
+                "Month"
+            )
+
+            st.line_chart(
+                chart_data[
+                    ["Feedback Volume"]
+                ]
+            )
+
+    # ---------------------------------------------------------
+    # PAIN POINT SUMMARY FROM DATABASE
+    # ---------------------------------------------------------
+
+    with col_b:
+
+        st.subheader(
+            "Customer Pain Points Summary"
+        )
+
+        pain_data = get_pain_point_summary()
+
+        if pain_data.empty:
+
+            st.info(
+                "No pain-point data available."
+            )
+
+        else:
+
+            pain_data = pain_data.set_index(
+                "Pain Area"
+            )
+
+            st.bar_chart(
+                pain_data[
+                    ["Support Volume"]
+                ]
+            )
+
+    # ---------------------------------------------------------
+    # DATABASE STATUS
+    # ---------------------------------------------------------
+
+    st.divider()
+
+    st.caption(
+        "All dashboard KPIs and charts are loaded from SQLite "
+        "database records."
+    )

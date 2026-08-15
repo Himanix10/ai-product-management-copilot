@@ -1,34 +1,25 @@
 import streamlit as st
+from agents.prd_agent import PRDAgent
+from backend.database.db import fetch_initiatives_db
 
 def render_prd_generator():
-    st.title("PRD Generator")
-    st.caption("Automatically draft Product Requirement Documents using AI Agents")
-
-    initiative = st.selectbox(
-        "Select Prioritized Initiative", 
-        ["Dashboard Performance Optimization", "Jira Webhook Integration", "Dark Mode Theme"]
-    )
+    st.title("PRD GENERATOR")
+    st.caption("Automatically draft Product Requirement Documents using Gemini AI Agents")
     
-    if st.button("Generate PRD with AI Agent", type="primary"):
-        with st.spinner("AI PRD Agent compiling specifications..."):
-            st.markdown(f"""
-            ---
-            # PRD: {initiative}
-            
-            **Document ID:** `PRD-501` | **Status:** `Approved` | **Target Quarter:** `Q3 2026`  
+    initiatives = fetch_initiatives_db()
+    opts = initiatives["Title"].tolist() if not initiatives.empty else ["Dashboard Performance Optimization", "Automated Jira Integration", "Bulk Export Features"]
+    selected_init = st.selectbox("Select Prioritized Initiative", opts)
+    target_user = st.text_input("Target Persona", value="Enterprise Users")
+    problem = st.text_area("Problem Statement", value=f"Customers reported friction on {selected_init}.")
+    requirements = st.text_area("Requirements", value="Real-time sync, sub-2s query response, automated unit test coverage.")
 
-            ### 1. Executive Summary
-            Operational requirements to execute **{initiative}**, resolving key user pain points.
-
-            ### 2. Objectives & Key Results (OKRs)
-            * Reduce P95 analytics query latency under **2.0 seconds**.
-            * Improve platform CSAT score by **15%**.
-
-            ### 3. Functional Requirements
-            * **FR-1:** Implement server-side caching for repeat analytical queries.
-            * **FR-2:** The API shall return structured HTTP timeout warnings.
-
-            ### 4. Acceptance Criteria
-            * **Given** a logged-in Product Lead, **When** opening dashboard, **Then** all widgets load in **< 2 seconds**.
-            ---
-            """)
+    if st.button("Generate PRD with Gemini Agent", type="primary"):
+        agent = PRDAgent()
+        res = agent.execute({
+            "feature_name": selected_init,
+            "target_user": target_user,
+            "problem": problem,
+            "requirements": requirements
+        })
+        st.markdown(res["prd_markdown"])
+        st.success("PRD saved to SQLite database successfully!")
