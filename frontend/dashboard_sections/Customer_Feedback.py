@@ -1,5 +1,12 @@
 import streamlit as st
-from backend.database.db import fetch_customer_feedback_db, insert_customer_feedback_db
+import importlib
+import backend.database.db as db_module
+
+try:
+    from backend.database.db import fetch_customer_feedback_db, insert_customer_feedback_db, get_feedback_categories_db
+except ImportError:
+    importlib.reload(db_module)
+    from backend.database.db import fetch_customer_feedback_db, insert_customer_feedback_db, get_feedback_categories_db
 from agents.ingestion_agent import IngestionAgent
 
 def render_customer_feedback():
@@ -7,7 +14,8 @@ def render_customer_feedback():
     st.caption("Filter and inspect raw customer feedback records")
     col_s1, col_s2 = st.columns([3, 1])
     search_query = col_s1.text_input("Search Feedback Text...", placeholder="Filter keywords...")
-    category = col_s2.selectbox("Filter Category", ["All", "Feature Request", "Usability", "Bug", "Integration"])
+    categories = ["All"] + get_feedback_categories_db()
+    category = col_s2.selectbox("Filter Category", categories)
     voc_data = fetch_customer_feedback_db(category=category, search_query=search_query)
     st.dataframe(voc_data, use_container_width=True)
     with st.expander("➕ Ingest New Feedback Record"):

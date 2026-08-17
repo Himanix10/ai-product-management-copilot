@@ -20,7 +20,8 @@ class BaseAgent(ABC):
             if response and response.text:
                 return response.text.strip()
             return None
-        except Exception:
+        except Exception as e:
+            print(f"[BaseAgent] Error invoking LLM for {self.agent_name}: {e}")
             return None
 
     @abstractmethod

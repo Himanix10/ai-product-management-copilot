@@ -38,6 +38,26 @@ def init_db():
 # FEEDBACK
 # ============================================================
 
+def get_feedback_categories_db() -> list:
+    db_mgr = DatabaseManager()
+    conn = db_mgr.get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT theme FROM feedback WHERE theme IS NOT NULL AND theme != '' ORDER BY theme ASC")
+        rows = cursor.fetchall()
+        db_cats = [r[0] for r in rows if r[0]]
+        defaults = ["Feature Request", "Usability", "Bug", "Integration"]
+        seen = set()
+        combined = []
+        for c in db_cats + defaults:
+            if c not in seen:
+                seen.add(c)
+                combined.append(c)
+        return sorted(combined)
+    finally:
+        conn.close()
+
+
 def fetch_customer_feedback_db(
     category: str = "All",
     search_query: str = ""
@@ -65,8 +85,8 @@ def fetch_customer_feedback_db(
     params = []
 
     if category and category != "All":
-        query += " AND theme = ?"
-        params.append(category)
+        query += " AND (LOWER(theme) = LOWER(?) OR LOWER(theme) LIKE LOWER(?))"
+        params.extend([category, f"%{category}%"])
 
     if search_query:
         query += """
@@ -148,6 +168,26 @@ def insert_customer_feedback_db(
 # PAIN POINTS
 # ============================================================
 
+def get_pain_point_severities_db() -> list:
+    db_mgr = DatabaseManager()
+    conn = db_mgr.get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT priority_level FROM pain_points WHERE priority_level IS NOT NULL AND priority_level != '' ORDER BY priority_level ASC")
+        rows = cursor.fetchall()
+        db_sevs = [r[0] for r in rows if r[0]]
+        defaults = ["Critical", "High", "Medium", "Low", "High Friction", "Medium Friction", "Low Friction"]
+        seen = set()
+        combined = []
+        for s in db_sevs + defaults:
+            if s not in seen:
+                seen.add(s)
+                combined.append(s)
+        return sorted(combined)
+    finally:
+        conn.close()
+
+
 def fetch_pain_points_db(
     severity: str = "All",
     search_query: str = ""
@@ -173,8 +213,9 @@ def fetch_pain_points_db(
     params = []
 
     if severity and severity != "All":
-        query += " AND priority_level = ?"
-        params.append(severity)
+        clean_sev = severity.replace(" Friction", "").strip()
+        query += " AND (LOWER(priority_level) = LOWER(?) OR LOWER(priority_level) = LOWER(?))"
+        params.extend([severity, clean_sev])
 
     if search_query:
         query += """
