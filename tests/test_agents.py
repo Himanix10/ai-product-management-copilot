@@ -1,3 +1,11 @@
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import pytest
 from agents.prioritization_agent import PrioritizationAgent
 from agents.prd_agent import PRDAgent
@@ -64,3 +72,6 @@ def test_roadmap_agent():
     agent = RoadmapAgent()
     res = agent.execute({})
     assert "schedule" in res
+
+if __name__ == "__main__":
+    pytest.main(["-v", __file__])
