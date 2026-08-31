@@ -1,72 +1,43 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+from agents.feature_request_agent import FeatureRequestAgent
+from agents.prioritization_agent import PrioritizationAgent
+from backend.database.db import fetch_initiatives_db
 
-from api_client import api_get, api_post
 
-st.title("Feature Requests")
-st.caption("RICE-based feature prioritization.")
+def render_feature_requests():
+    st.title("Feature Requests")
+    st.caption("Analyze feature request demand velocity and calculate priority metrics")
 
-with st.form("feature"):
-    name = st.text_input("Feature Name")
-    description = st.text_area("Problem / Feature Description")
-    left, middle, right, extra = st.columns(4)
-    reach = left.number_input("Reach", 0.0, 1000000.0, 5000.0, 100.0)
-    impact = middle.number_input("Impact", 0.0, 10.0, 2.5, 0.1)
-    confidence = right.number_input("Confidence", 0.0, 1.0, 0.8, 0.05)
-    effort = extra.number_input("Effort", 0.1, 100.0, 2.0, 0.5)
-    submit = st.form_submit_button("Calculate RICE & Prioritize", type="primary")
+    with st.container(border=True):
+        st.subheader("Feature Demand & Feasibility Evaluator")
+        req_text = st.text_input("Enter Feature Request Description", value="Add automated CSV export and Jira REST webhook sync")
 
-if submit:
-    if not name.strip():
-        st.error("Feature name is required.")
-    else:
-        try:
-            r = api_post(
-                "/api/agents/prioritize",
-                json={
-                    "name": name,
-                    "description": description,
-                    "reach": reach,
-                    "impact": impact,
-                    "confidence": confidence,
-                    "effort": effort,
-                },
-                timeout=20,
-            )
-            r.raise_for_status()
-            st.session_state.last_priority = r.json()
-        except Exception as e:
-            st.error(f"Backend error: {e}")
+        if st.button("Evaluate Demand Level", type="secondary"):
+            fr_agent = FeatureRequestAgent()
+            res = fr_agent.execute({"request": req_text})
+            st.info(f"Demand Velocity: **{res.get('demand_level', 'Medium Demand')}** | Status: **{res.get('status', 'Analyzed')}**")
 
-if "last_priority" in st.session_state:
-    q = st.session_state.last_priority
-    st.success(f"Priority: {q['priority']} | RICE Score: {q['rice_score']}")
-    st.write(q["recommendation"])
+    st.divider()
 
-try:
-    rows = api_get("/api/features", timeout=5).json()
-except Exception:
-    rows = []
+    with st.form("feature_request_scoring_form"):
+        st.subheader("Submit Scored Feature Request to Initiatives")
+        name = st.text_input("Feature Name", value="Automated CSV/Excel Bulk Importer")
+        desc = st.text_area("Problem / Description", value="Support managers require bulk review uploads directly into SQLite.")
 
-if rows:
-    df = pd.DataFrame(rows)
-    st.plotly_chart(
-        px.scatter(
-            df,
-            x="effort",
-            y="reach",
-            size="rice_score",
-            color="priority",
-            hover_name="name",
-            title="Reach vs Effort",
-            template="plotly_dark",
-            color_discrete_sequence=["#818cf8", "#c084fc", "#f472b6"]
-        ),
-        use_container_width=True,
-    )
-    st.dataframe(
-        df[["name", "reach", "impact", "confidence", "effort", "rice_score", "priority", "status"]],
-        use_container_width=True,
-        hide_index=True,
-    )
+        col1, col2, col3, col4 = st.columns(4)
+        reach = col1.number_input("Reach (Users/Qtr)", value=4000.0, step=500.0)
+        impact = col2.slider("Impact (0.5 to 3.0)", 0.5, 3.0, 2.5, step=0.5)
+        confidence = col3.slider("Confidence (0.5 to 1.0)", 0.5, 1.0, 0.8, step=0.1)
+        effort = col4.number_input("Effort (Person-Months)", value=1.5, min_value=0.5, step=0.5)
+
+        if st.form_submit_button("Calculate RICE & Save to Initiatives", type="primary"):
+            p_agent = PrioritizationAgent()
+            res = p_agent.execute({"title": name, "reach": reach, "impact": impact, "confidence": confidence, "effort": effort})
+            st.success(f"Initiative **{name}** added with RICE Score: **{res['score']}**")
+            st.rerun()
+
+    st.divider()
+    st.subheader("Current Feature Initiatives")
+    initiatives = fetch_initiatives_db()
+    st.dataframe(initiatives, use_container_width=True)

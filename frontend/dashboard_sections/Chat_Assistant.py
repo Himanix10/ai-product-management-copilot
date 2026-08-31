@@ -2,10 +2,11 @@ import streamlit as st
 from agents.chat_agent import ChatAgent
 from backend.memory.conversation_memory import ConversationMemory
 
+
 def render_chat_assistant():
     st.title("Dedicated Chat Assistant")
-    st.caption("Interactive product copilot powered by Google Gemini and persistent SQLite conversation memory")
-    
+    st.caption("Interactive product copilot powered by AI and persistent SQLite conversation memory")
+
     col_a, col_b = st.columns([5, 1])
     with col_b:
         if st.button("Clear Memory", use_container_width=True):

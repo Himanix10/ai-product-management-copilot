@@ -26,7 +26,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Initialize Session Auth
 init_auth()
 
 def render_fixed_right_chatbot():
