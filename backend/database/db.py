@@ -1,10 +1,7 @@
 import sqlite3
 import uuid
 from datetime import datetime
-from pathlib import Path
-
 import pandas as pd
-
 from backend.config import config
 
 
@@ -14,28 +11,21 @@ class DatabaseManager:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
-
         return cls._instance
 
     def get_connection(self):
-        conn = sqlite3.connect(
-            config.DATABASE_PATH,
-            check_same_thread=False
-        )
-
+        conn = sqlite3.connect(config.DATABASE_PATH, check_same_thread=False)
         conn.row_factory = sqlite3.Row
-
         return conn
 
 
 def init_db():
     from create_db import build_database
-
     build_database()
 
 
 # ============================================================
-# FEEDBACK
+# FEEDBACK MANAGEMENT
 # ============================================================
 
 def get_feedback_categories_db() -> list:
@@ -54,15 +44,13 @@ def get_feedback_categories_db() -> list:
                 seen.add(c)
                 combined.append(c)
         return sorted(combined)
+    except Exception:
+        return ["Bug", "Feature Request", "Integration", "Usability"]
     finally:
         conn.close()
 
 
-def fetch_customer_feedback_db(
-    category: str = "All",
-    search_query: str = ""
-) -> pd.DataFrame:
-
+def fetch_customer_feedback_db(category: str = "All", search_query: str = "") -> pd.DataFrame:
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
 
@@ -74,14 +62,10 @@ def fetch_customer_feedback_db(
             feedback_text AS Feedback,
             theme AS Category,
             sentiment AS Sentiment,
-            priority AS Priority,
-            status AS Status,
-            feature_request AS Feature_Request,
-            rice_score AS RICE_Score
+            priority AS Priority
         FROM feedback
         WHERE 1 = 1
     """
-
     params = []
 
     if category and category != "All":
@@ -96,70 +80,33 @@ def fetch_customer_feedback_db(
                 OR theme LIKE ?
             )
         """
-
         search_term = f"%{search_query}%"
-
-        params.extend(
-            [
-                search_term,
-                search_term,
-                search_term,
-            ]
-        )
-
-    query += " ORDER BY feedback_timestamp DESC"
+        params.extend([search_term, search_term, search_term])
 
     try:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=params
-        )
+        return pd.read_sql_query(query, conn, params=params)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
 
-def insert_customer_feedback_db(
-    source: str,
-    user_type: str,
-    feedback_text: str,
-    category: str
-):
-
+def insert_customer_feedback_db(source: str, user_type: str, feedback_text: str, category: str):
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
-        feedback_id = f"FB-{uuid.uuid4().hex[:8].upper()}"
-
-        conn.execute(
-            """
+        cursor = conn.cursor()
+        fb_id = f"FB-{uuid.uuid4().hex[:8].upper()}"
+        cursor.execute("""
             INSERT INTO feedback (
-                user_id,
-                feedback_id,
-                user_name,
-                feedback_timestamp,
-                source,
-                feedback_text,
-                theme,
-                status
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                "streamlit-user",
-                feedback_id,
-                user_type,
-                datetime.utcnow().isoformat(),
-                source,
-                feedback_text,
-                category,
-                "New",
-            ),
-        )
-
+                user_id, feedback_id, user_name, feedback_timestamp, source,
+                feedback_text, theme, sentiment, priority, status, rice_score
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "streamlit-user", fb_id, user_type, datetime.utcnow().isoformat(),
+            source, feedback_text, category, "Neutral", "Medium", "New", 0.0
+        ))
         conn.commit()
-
     finally:
         conn.close()
 
@@ -184,15 +131,13 @@ def get_pain_point_severities_db() -> list:
                 seen.add(s)
                 combined.append(s)
         return sorted(combined)
+    except Exception:
+        return ["High Friction", "Medium Friction", "Low Friction"]
     finally:
         conn.close()
 
 
-def fetch_pain_points_db(
-    severity: str = "All",
-    search_query: str = ""
-) -> pd.DataFrame:
-
+def fetch_pain_points_db(severity: str = "All", search_query: str = "") -> pd.DataFrame:
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
 
@@ -209,7 +154,6 @@ def fetch_pain_points_db(
         FROM pain_points
         WHERE 1 = 1
     """
-
     params = []
 
     if severity and severity != "All":
@@ -225,21 +169,13 @@ def fetch_pain_points_db(
                 OR category LIKE ?
             )
         """
-
         search_term = f"%{search_query}%"
-
-        params.extend(
-            [search_term, search_term, search_term]
-        )
-
-    query += " ORDER BY feedback_count DESC"
+        params.extend([search_term, search_term, search_term])
 
     try:
-        return pd.read_sql_query(
-            query,
-            conn,
-            params=params
-        )
+        return pd.read_sql_query(query, conn, params=params)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
@@ -248,59 +184,24 @@ def fetch_pain_points_db(
 # INITIATIVES
 # ============================================================
 
-def save_initiative_db(
-    title: str,
-    reach: float,
-    impact: float,
-    confidence: float,
-    effort: float,
-    rice_score: float,
-    status: str = "Planned"
-):
-
+def save_initiative_db(title: str, reach: float, impact: float, confidence: float, effort: float, rice_score: float, status: str = "Planned"):
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
         initiative_id = f"INIT-{uuid.uuid4().hex[:8].upper()}"
-
-        conn.execute(
-            """
+        conn.execute("""
             INSERT INTO initiatives (
-                initiative_id,
-                feature_name,
-                reach,
-                impact,
-                confidence,
-                effort,
-                rice_score,
-                status
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                initiative_id,
-                title,
-                reach,
-                impact,
-                confidence,
-                effort,
-                rice_score,
-                status,
-            ),
-        )
-
+                initiative_id, feature_name, reach, impact, confidence, effort, rice_score, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (initiative_id, title, reach, impact, confidence, effort, rice_score, status))
         conn.commit()
-
     finally:
         conn.close()
 
 
 def fetch_initiatives_db() -> pd.DataFrame:
-
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     query = """
         SELECT
             initiative_id AS ID,
@@ -318,12 +219,10 @@ def fetch_initiatives_db() -> pd.DataFrame:
         FROM initiatives
         ORDER BY rice_score DESC
     """
-
     try:
-        return pd.read_sql_query(
-            query,
-            conn
-        )
+        return pd.read_sql_query(query, conn)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
@@ -332,105 +231,95 @@ def fetch_initiatives_db() -> pd.DataFrame:
 # PRDs
 # ============================================================
 
-def save_prd_db(
-    feature_name: str,
-    target_persona: str,
-    problem: str,
-    requirements: str,
-    markdown: str
-):
-
+def save_prd_db(feature_name: str, target_persona: str, problem: str, requirements: str, markdown: str):
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
         prd_id = f"PRD-{uuid.uuid4().hex[:8].upper()}"
-        now = datetime.utcnow().isoformat()
+        now = datetime.now().isoformat()
+        
+        # Check available columns in prds table to guarantee schema compatibility
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(prds)")
+        cols = [r[1] for r in cursor.fetchall()]
 
-        conn.execute(
-            """
-            INSERT INTO prds (
-                prd_id,
-                title,
-                executive_summary,
-                problem_statement,
-                objectives,
-                user_personas,
-                user_stories,
-                functional_requirements,
-                non_functional_requirements,
-                acceptance_criteria,
-                success_metrics,
-                risks,
-                open_questions,
-                priority,
-                owner,
-                estimated_effort,
-                rice_score,
-                status,
-                created_at,
-                updated_at
-            )
-            VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            """,
-            (
-                prd_id,
-                feature_name,
-                markdown[:500],
-                problem,
-                "",
-                target_persona,
-                "",
-                requirements,
-                "",
-                "",
-                "",
-                "",
-                "",
-                "P1",
-                "AI Product Manager",
-                None,
-                None,
-                "Draft",
-                now,
-                now,
-            ),
-        )
-
+        if "markdown_content" in cols:
+            conn.execute("""
+                INSERT INTO prds (
+                    prd_id, title, executive_summary, problem_statement, objectives,
+                    user_personas, user_stories, functional_requirements,
+                    non_functional_requirements, acceptance_criteria, success_metrics,
+                    risks, open_questions, priority, owner, estimated_effort,
+                    rice_score, status, markdown_content, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                prd_id, feature_name, markdown[:500], problem, "", target_persona, "",
+                requirements, "", "", "", "", "", "P1", "AI Product Manager",
+                None, None, "Draft", markdown, now, now
+            ))
+        else:
+            conn.execute("""
+                INSERT INTO prds (
+                    prd_id, title, executive_summary, problem_statement, objectives,
+                    user_personas, user_stories, functional_requirements,
+                    non_functional_requirements, acceptance_criteria, success_metrics,
+                    risks, open_questions, priority, owner, estimated_effort,
+                    rice_score, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                prd_id, feature_name, markdown, problem, "", target_persona, "",
+                requirements, "", "", "", "", "", "P1", "AI Product Manager",
+                None, None, "Draft", now, now
+            ))
         conn.commit()
-
     finally:
         conn.close()
 
 
 def fetch_prds_db() -> pd.DataFrame:
-
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
-        return pd.read_sql_query(
-            """
-            SELECT
-                prd_id AS ID,
-                title AS Title,
-                executive_summary AS Summary,
-                problem_statement AS Problem,
-                user_personas AS Personas,
-                functional_requirements AS Requirements,
-                priority AS Priority,
-                owner AS Owner,
-                status AS Status,
-                created_at AS Created
-            FROM prds
-            ORDER BY created_at DESC
-            """,
-            conn
-        )
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(prds)")
+        cols = [r[1] for r in cursor.fetchall()]
 
+        if "markdown_content" in cols:
+            query = """
+                SELECT
+                    prd_id AS ID,
+                    title AS Title,
+                    executive_summary AS Summary,
+                    problem_statement AS Problem,
+                    user_personas AS Personas,
+                    functional_requirements AS Requirements,
+                    priority AS Priority,
+                    owner AS Owner,
+                    status AS Status,
+                    markdown_content AS Content,
+                    created_at AS Created
+                FROM prds
+                ORDER BY created_at DESC
+            """
+        else:
+            query = """
+                SELECT
+                    prd_id AS ID,
+                    title AS Title,
+                    executive_summary AS Summary,
+                    problem_statement AS Problem,
+                    user_personas AS Personas,
+                    functional_requirements AS Requirements,
+                    priority AS Priority,
+                    owner AS Owner,
+                    status AS Status,
+                    created_at AS Created
+                FROM prds
+                ORDER BY created_at DESC
+            """
+        return pd.read_sql_query(query, conn)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
@@ -440,13 +329,10 @@ def fetch_prds_db() -> pd.DataFrame:
 # ============================================================
 
 def fetch_roadmap_db() -> pd.DataFrame:
-
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
-        return pd.read_sql_query(
-            """
+        return pd.read_sql_query("""
             SELECT
                 roadmap_id AS ID,
                 initiative_id AS Initiative_ID,
@@ -464,26 +350,45 @@ def fetch_roadmap_db() -> pd.DataFrame:
                 business_goal AS Business_Goal,
                 success_metric AS Success_Metric
             FROM roadmap
-            ORDER BY
-                quarter,
-                progress_percentage DESC
-            """,
-            conn
-        )
-
+            ORDER BY quarter, progress_percentage DESC
+        """, conn)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
 
 # ============================================================
-# DASHBOARD ANALYTICS
+# PRODUCT ANALYTICS & DASHBOARD TELEMETRY
 # ============================================================
 
-def get_feedback_monthly_counts():
-
+def fetch_product_analytics_db() -> pd.DataFrame:
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
+    try:
+        query = """
+            SELECT
+                metric_name AS 'Metric Name',
+                category AS 'Category',
+                metric_value AS 'Current Value',
+                target_value AS 'Target Value',
+                unit AS 'Unit',
+                trend AS 'Trend',
+                status AS 'Health Status',
+                reporting_period AS 'Period'
+            FROM product_metrics
+            ORDER BY category, metric_name
+        """
+        return pd.read_sql_query(query, conn)
+    except Exception:
+        return pd.DataFrame()
+    finally:
+        conn.close()
 
+
+def get_feedback_monthly_counts():
+    db_mgr = DatabaseManager()
+    conn = db_mgr.get_connection()
     try:
         query = """
             SELECT
@@ -494,21 +399,16 @@ def get_feedback_monthly_counts():
             GROUP BY substr(feedback_timestamp, 1, 7)
             ORDER BY Month
         """
-
-        return pd.read_sql_query(
-            query,
-            conn
-        )
-
+        return pd.read_sql_query(query, conn)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()
 
 
 def get_pain_point_summary():
-
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
-
     try:
         query = """
             SELECT
@@ -519,11 +419,8 @@ def get_pain_point_summary():
             ORDER BY 'Support Volume' DESC
             LIMIT 10
         """
-
-        return pd.read_sql_query(
-            query,
-            conn
-        )
-
+        return pd.read_sql_query(query, conn)
+    except Exception:
+        return pd.DataFrame()
     finally:
         conn.close()

@@ -7,4 +7,6 @@ class ScoringTools:
 
     @staticmethod
     def calculate_ice(impact: float, confidence: float, ease: float) -> float:
+        if ease <= 0:
+            raise ValueError("Ease must be greater than zero.")
         return round(impact * confidence * ease, 2)

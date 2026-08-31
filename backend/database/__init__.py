@@ -9,7 +9,11 @@ from .db import (
     save_initiative_db,
     fetch_initiatives_db,
     save_prd_db,
-    fetch_roadmap_db
+    fetch_prds_db,
+    fetch_roadmap_db,
+    fetch_product_analytics_db,
+    get_feedback_monthly_counts,
+    get_pain_point_summary
 )
 
 __all__ = [
@@ -23,5 +27,9 @@ __all__ = [
     "save_initiative_db",
     "fetch_initiatives_db",
     "save_prd_db",
-    "fetch_roadmap_db"
+    "fetch_prds_db",
+    "fetch_roadmap_db",
+    "fetch_product_analytics_db",
+    "get_feedback_monthly_counts",
+    "get_pain_point_summary"
 ]
