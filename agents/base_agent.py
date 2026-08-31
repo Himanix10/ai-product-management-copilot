@@ -3,6 +3,7 @@ from typing import Dict, Any
 from google import genai
 from backend.config import config
 
+
 class BaseAgent(ABC):
     def __init__(self, agent_name: str):
         self.agent_name = agent_name
@@ -21,9 +22,8 @@ class BaseAgent(ABC):
                 return response.text.strip()
             return None
         except Exception as e:
-            print(f"[BaseAgent] Error invoking LLM for {self.agent_name}: {e}")
             return None
 
     @abstractmethod
-    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, inputs: Dict[str, Any] = None) -> Dict[str, Any]:
         pass

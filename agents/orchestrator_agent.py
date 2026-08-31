@@ -5,6 +5,7 @@ from agents.prd_agent import PRDAgent
 from agents.roadmap_agent import RoadmapAgent
 from agents.theme_agent import ThemeAgent
 
+
 class OrchestratorAgent(BaseAgent):
     def __init__(self):
         super().__init__("OrchestratorAgent")
@@ -13,7 +14,8 @@ class OrchestratorAgent(BaseAgent):
         self.roadmap_agent = RoadmapAgent()
         self.theme_agent = ThemeAgent()
 
-    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, inputs: Dict[str, Any] = None) -> Dict[str, Any]:
+        inputs = inputs or {}
         prompt = inputs.get("prompt", "").lower()
         llm_response = self.invoke_llm(
             "You are an Orchestrator Agent. Route task to: PRD, RICE, or DISCOVERY. Return only the category.",

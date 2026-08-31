@@ -3,6 +3,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from agents.base_agent import BaseAgent
 from backend.tools.db_tools import DBTools
 
+
 class ThemeAgent(BaseAgent):
     def __init__(self):
         super().__init__("ThemeAgent")
@@ -22,10 +23,7 @@ class ThemeAgent(BaseAgent):
             "Extract 3 concise strategic enterprise themes from input keywords. Return only as a comma separated list.",
             f"Keywords: {', '.join(extracted_themes)}"
         )
-        if llm_themes and "," in llm_themes:
-            themes = [t.strip() for t in llm_themes.split(",") if t.strip()]
-        else:
-            themes = extracted_themes
+        themes = [t.strip() for t in llm_themes.split(",") if t.strip()] if llm_themes and "," in llm_themes else extracted_themes
 
         return {
             "agent": self.agent_name,

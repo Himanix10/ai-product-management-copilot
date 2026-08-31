@@ -5,6 +5,7 @@ from sklearn.metrics import silhouette_score
 from agents.base_agent import BaseAgent
 from backend.tools.db_tools import DBTools
 
+
 class ClusteringAgent(BaseAgent):
     def __init__(self):
         super().__init__("ClusteringAgent")

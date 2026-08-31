@@ -3,11 +3,13 @@ from agents.base_agent import BaseAgent
 from backend.tools.scoring_tools import ScoringTools
 from backend.tools.db_tools import DBTools
 
+
 class PrioritizationAgent(BaseAgent):
     def __init__(self):
         super().__init__("PrioritizationAgent")
 
-    def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, inputs: Dict[str, Any] = None) -> Dict[str, Any]:
+        inputs = inputs or {}
         title = inputs.get("title", "Initiative")
         reach = float(inputs.get("reach", 0))
         impact = float(inputs.get("impact", 0))

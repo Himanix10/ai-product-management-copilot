@@ -2,6 +2,7 @@ from typing import Dict, Any
 from agents.base_agent import BaseAgent
 from backend.tools.db_tools import DBTools
 
+
 class RoadmapAgent(BaseAgent):
     def __init__(self):
         super().__init__("RoadmapAgent")
@@ -17,8 +18,8 @@ class RoadmapAgent(BaseAgent):
                 schedule.append({
                     "Quarter": q,
                     "Initiative": row["Title"],
-                    "RICE Score": row["RICE Score"],
-                    "Status": row["Status"]
+                    "RICE Score": row.get("RICE Score", 0.0),
+                    "Status": row.get("Status", "Planned")
                 })
         else:
             schedule = [
