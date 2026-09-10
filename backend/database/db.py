@@ -28,6 +28,30 @@ def init_db():
 # FEEDBACK MANAGEMENT
 # ============================================================
 
+def insert_customer_feedback_db(source: str, user_type: str, feedback_text: str, category: str):
+    """
+    Inserts a feedback record into the database.
+    Retained for programmatic, API, and DBTools/pipeline integration.
+    """
+    db_mgr = DatabaseManager()
+    conn = db_mgr.get_connection()
+    try:
+        cursor = conn.cursor()
+        fb_id = f"FB-{uuid.uuid4().hex[:8].upper()}"
+        cursor.execute("""
+            INSERT INTO feedback (
+                user_id, feedback_id, user_name, feedback_timestamp, source,
+                feedback_text, theme, sentiment, priority, status, rice_score
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "system-ingest", fb_id, user_type, datetime.now().isoformat(),
+            source, feedback_text, category, "Neutral", "Medium", "New", 0.0
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_feedback_categories_db() -> list:
     db_mgr = DatabaseManager()
     conn = db_mgr.get_connection()
@@ -87,26 +111,6 @@ def fetch_customer_feedback_db(category: str = "All", search_query: str = "") ->
         return pd.read_sql_query(query, conn, params=params)
     except Exception:
         return pd.DataFrame()
-    finally:
-        conn.close()
-
-
-def insert_customer_feedback_db(source: str, user_type: str, feedback_text: str, category: str):
-    db_mgr = DatabaseManager()
-    conn = db_mgr.get_connection()
-    try:
-        cursor = conn.cursor()
-        fb_id = f"FB-{uuid.uuid4().hex[:8].upper()}"
-        cursor.execute("""
-            INSERT INTO feedback (
-                user_id, feedback_id, user_name, feedback_timestamp, source,
-                feedback_text, theme, sentiment, priority, status, rice_score
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            "streamlit-user", fb_id, user_type, datetime.now().isoformat(),
-            source, feedback_text, category, "Neutral", "Medium", "New", 0.0
-        ))
-        conn.commit()
     finally:
         conn.close()
 
