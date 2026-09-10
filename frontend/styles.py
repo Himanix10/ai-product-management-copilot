@@ -2,201 +2,248 @@ import streamlit as st
 
 BG = "#dfefff"
 PRIMARY = "#4f46e5"
-TEXT = "#1f2937"
-MUTED = "#718096"
 
 
 def apply_global_styles():
     st.markdown(
         f"""
         <style>
-        :root {{
-            --pm-bg: {BG};
-            --pm-primary: {PRIMARY};
-            --pm-text: {TEXT};
-            --pm-muted: {MUTED};
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        html, body, [class*="css"] {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            color: #000000 !important;
         }}
 
+        /* App Canvas Background */
         .stApp {{
-            background: var(--pm-bg) !important;
-            color: var(--pm-text);
+            background-color: {BG} !important;
+            color: #000000 !important;
         }}
 
         [data-testid="stHeader"] {{
             background: transparent !important;
         }}
 
-        [data-testid="stToolbar"] {{
-            right: 1rem;
-        }}
-
+        /* ========================================================================= */
+        /* INVERT SIDEBAR THEME: PURE WHITE BACKGROUND & SOLID BLACK TEXT            */
+        /* ========================================================================= */
         section[data-testid="stSidebar"] {{
+            background-color: #ffffff !important;
+            border-right: 1px solid #d8dee8 !important;
+        }}
+
+        section[data-testid="stSidebar"] * {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+        }}
+
+        section[data-testid="stSidebar"] div[role="radiogroup"] label,
+        section[data-testid="stSidebar"] div[role="radiogroup"] label p,
+        section[data-testid="stSidebar"] div[role="radiogroup"] label span {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            font-weight: 700 !important;
+            font-size: 0.93rem !important;
+        }}
+
+        /* ========================================================================= */
+        /* BOTH SIDEBAR TOGGLE BUTTONS (<< INSIDE & >> OUTSIDE):                    */
+        /* SOLID WHITE ROUNDED SQUARES WITH JET-BLACK CHEVRON ARROWS                 */
+        /* ========================================================================= */
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"],
+        header[data-testid="stHeader"] {{
+            visibility: visible !important;
+            opacity: 1 !important;
+        }}
+
+        [data-testid="stSidebarCollapsedControl"] button,
+        [data-testid="collapsedControl"] button,
+        [data-testid="stSidebarCollapseButton"] button,
+        button[data-testid="stSidebarCollapsedControl"],
+        button[data-testid="stSidebarCollapseButton"],
+        button[aria-label*="sidebar" i],
+        header[data-testid="stHeader"] button {{
+            background-color: #ffffff !important;
             background: #ffffff !important;
-            border-right: 1px solid #d8dee8;
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            margin: 4px !important;
+            cursor: pointer !important;
         }}
 
-        section[data-testid="stSidebar"] > div {{
-            padding-top: 1.6rem;
+        [data-testid="stSidebarCollapsedControl"] svg,
+        [data-testid="stSidebarCollapsedControl"] path,
+        [data-testid="collapsedControl"] svg,
+        [data-testid="collapsedControl"] path,
+        [data-testid="stSidebarCollapseButton"] svg,
+        [data-testid="stSidebarCollapseButton"] path,
+        button[aria-label*="sidebar" i] svg,
+        button[aria-label*="sidebar" i] path,
+        header[data-testid="stHeader"] svg,
+        header[data-testid="stHeader"] path {{
+            fill: #000000 !important;
+            stroke: #000000 !important;
+            color: #000000 !important;
+            filter: brightness(0) contrast(200%) !important;
+            width: 18px !important;
+            height: 18px !important;
         }}
 
-        .block-container {{
-            max-width: 100% !important;
-            padding: 2.4rem 4.9rem 3rem 5.1rem !important;
+        /* ========================================================================= */
+        /* GENERAL TEXT & INPUT FIELDS                                               */
+        /* ========================================================================= */
+        div[data-testid="stWidgetLabel"] label,
+        .stTextInput label,
+        .stTextArea label,
+        label, p, span {{
+            color: #000000 !important;
         }}
 
-        .pm-brand {{
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #273244;
-            margin-bottom: .25rem;
-        }}
-
-        .pm-copilot-label {{
-            color: #6d5bd0;
-            font-size: .67rem;
-            font-weight: 800;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-        }}
-
-        .pm-search-wrap {{
-            margin: 0 0 2.35rem 0;
-        }}
-
-        .pm-page-title {{
-            font-size: 2.55rem;
-            line-height: 1.05;
-            font-weight: 800;
-            letter-spacing: -.035em;
-            margin: 0 0 .6rem 0;
-            color: #172235;
-        }}
-
-        .pm-page-subtitle {{
-            color: #718096;
-            font-size: .98rem;
-            margin-bottom: 1.55rem;
-        }}
-
-        .pm-section-title {{
-            font-size: 1.2rem;
-            font-weight: 750;
-            margin: .25rem 0 .8rem;
-            color: #263447;
-        }}
-
-        div[data-testid="stTextInput"] input,
-        div[data-testid="stTextArea"] textarea,
-        div[data-testid="stNumberInput"] input,
-        div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
-            background: #ffffff !important;
-            border-radius: 8px !important;
+        h1, h2, h3, h4 {{
+            color: #000000 !important;
+            font-weight: 800 !important;
         }}
 
         div[data-testid="stTextInput"] input,
         div[data-testid="stTextArea"] textarea {{
-            border-color: #c9d6e5 !important;
-        }}
-
-        button[kind="primary"] {{
-            background: linear-gradient(90deg, #4338ca, #4f46e5) !important;
-            border: none !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            border: 1.5px solid #475569 !important;
             border-radius: 8px !important;
-        }}
-
-        button[kind="secondary"] {{
-            border-radius: 8px !important;
+            font-weight: 600 !important;
         }}
 
         div[data-testid="stMetric"] {{
-            background: rgba(255,255,255,.62);
-            border: 1px solid #c9d9e9;
-            border-radius: 12px;
-            padding: 1rem;
+            background: rgba(255, 255, 255, 0.95) !important;
+            border: 1px solid #c9d9e9 !important;
+            border-radius: 14px !important;
+            padding: 1.1rem 1.25rem !important;
         }}
 
-        div[data-testid="stDataFrame"] {{
-            border-radius: 10px;
-            overflow: hidden;
+        div[data-testid="stMetric"] [data-testid="stMetricValue"] {{
+            color: #000000 !important;
+            font-weight: 900 !important;
         }}
 
-        .pm-card {{
-            background: rgba(255,255,255,.58);
-            border: 1px solid #c8d8e8;
-            border-radius: 12px;
-            padding: 1rem 1.05rem;
+        .block-container {{
+            max-width: 100% !important;
+            padding: 1.5rem 3.5rem 4rem 3.5rem !important;
+        }}
+        /* Sign Out Button: Solid White Box with Readable Dark Text */
+        section[data-testid="stSidebar"] button {{
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
         }}
 
-        .pm-road-card {{
-            background: rgba(255,255,255,.52);
-            border: 1px solid #c8d8e8;
-            border-radius: 11px;
-            padding: .95rem;
-            min-height: 150px;
-            margin-bottom: .85rem;
+        section[data-testid="stSidebar"] button p,
+        section[data-testid="stSidebar"] button span {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            font-weight: 800 !important;
         }}
 
-        .pm-road-title {{
-            font-weight: 750;
-            color: #25354b;
-            margin-bottom: .75rem;
+        section[data-testid="stSidebar"] button:hover {{
+            background-color: #f8fafc !important;
+            border-color: #94a3b8 !important;
         }}
 
-        .pm-user-card {{
-            border: 1px solid #d8dee8;
-            border-radius: 9px;
-            padding: 1rem;
-            margin-top: .8rem;
-            background: #ffffff;
+        /* ========================================================================= */
+        /* BOTTOM-RIGHT CHATBOT: PURE WHITE BOX & ROBOT ICON                         */
+        /* ========================================================================= */
+        div[data-testid="stPopover"] {{
+            position: fixed !important;
+            bottom: 25px !important;
+            right: 25px !important;
+            width: 60px !important;
+            height: 60px !important;
+            z-index: 999999 !important;
         }}
 
-        .pm-chat-fallback {{
-            background: #ffffff;
-            border: 1px solid #d4dce7;
-            border-radius: 12px;
-            padding: 1rem;
+        div[data-testid="stPopover"] > button {{
+            width: 60px !important;
+            height: 60px !important;
+            min-width: 60px !important;
+            min-height: 60px !important;
+            border-radius: 14px !important;
+            padding: 0 !important;
+            border: 1.5px solid #cbd5e1 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+            cursor: pointer !important;
+            color: transparent !important;
         }}
 
-        /* Make Streamlit's radio controls look like the video navigation. */
-        section[data-testid="stSidebar"] div[role="radiogroup"] {{
-            gap: .12rem;
+        div[data-testid="stChatInput"] textarea {{
+            color: #ffffff !important;
+            -webkit-text-fill-color: #ffffff !important;
+        }}
+/* ========================================================================= */
+        /* BOTTOM-RIGHT CHATBOT: PURE WHITE BOX & LARGE ROBOT ICON                   */
+        /* ========================================================================= */
+        div[data-testid="stPopover"] {{
+            position: fixed !important;
+            bottom: 25px !important;
+            right: 25px !important;
+            width: 60px !important;
+            height: 60px !important;
+            z-index: 999999 !important;
         }}
 
-        section[data-testid="stSidebar"] div[role="radiogroup"] label {{
-            padding: .1rem 0 !important;
-            color: #374151 !important;
-            font-size: .88rem !important;
+        div[data-testid="stPopover"] > button,
+        div[data-testid="stPopover"] button {{
+            width: 60px !important;
+            height: 60px !important;
+            min-width: 60px !important;
+            min-height: 60px !important;
+            border-radius: 14px !important;
+            padding: 0 !important;
+            border: 1.5px solid #cbd5e1 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+            cursor: pointer !important;
         }}
 
-        section[data-testid="stSidebar"] div[role="radiogroup"] label > div:first-child {{
-            width: 1rem !important;
-            height: 1rem !important;
+        /* Make the robot emoji larger (2rem) and perfectly centered */
+        div[data-testid="stPopover"] > button p,
+        div[data-testid="stPopover"] > button span:not([data-baseweb="icon"]) {{
+            font-size: 2rem !important;
+            line-height: 1 !important;
+            display: block !important;
+            visibility: visible !important;
         }}
 
-        @media (max-width: 900px) {{
-            .block-container {{
-                padding: 1.4rem 1.25rem 2rem !important;
-            }}
-            .pm-page-title {{ font-size: 2rem; }}
+        /* Hide the dropdown/expand_more arrow icon entirely */
+        div[data-testid="stPopover"] svg,
+        div[data-testid="stPopover"] span[data-baseweb="icon"] {{
+            display: none !important;
+            visibility: hidden !important;
         }}
+       
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-
-def render_global_search():
-    st.markdown('<div class="pm-search-wrap">', unsafe_allow_html=True)
-    query = st.text_input(
-        "Global search",
-        placeholder="Search VOC feedback, pain points, PRDs, and initiatives...",
-        label_visibility="collapsed",
-        key="global_pm_search",
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    return query
-
-
-def page_header(title: str, subtitle: str):
-    st.markdown(f'<div class="pm-page-title">{title}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="pm-page-subtitle">{subtitle}</div>', unsafe_allow_html=True)

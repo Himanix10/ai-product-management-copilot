@@ -1,0 +1,6 @@
+feedback_id,source,content,date,sentiment
+FB001,Zendesk,"The dashboard takes way too long to load when I have more than 50 items.",2023-10-01,negative
+FB002,Jira,"Need a dark mode option. The current white background is too bright at night.",2023-10-02,neutral
+FB003,CSV_Upload,"I love the new export feature, but it fails when exporting to PDF.",2023-10-03,mixed
+FB004,App_Review,"App crashes constantly on the new iOS update!",2023-10-04,negative
+FB005,User_Interview,"It would be great to have a shortcut key to quickly create a new ticket.",2023-10-05,positive
