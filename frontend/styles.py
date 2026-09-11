@@ -142,6 +142,7 @@ def apply_global_styles():
             max-width: 100% !important;
             padding: 1.5rem 3.5rem 4rem 3.5rem !important;
         }}
+
         /* Sign Out Button: Solid White Box with Readable Dark Text */
         section[data-testid="stSidebar"] button {{
             background-color: #ffffff !important;
@@ -164,40 +165,6 @@ def apply_global_styles():
         }}
 
         /* ========================================================================= */
-        /* BOTTOM-RIGHT CHATBOT: PURE WHITE BOX & ROBOT ICON                         */
-        /* ========================================================================= */
-        div[data-testid="stPopover"] {{
-            position: fixed !important;
-            bottom: 25px !important;
-            right: 25px !important;
-            width: 60px !important;
-            height: 60px !important;
-            z-index: 999999 !important;
-        }}
-
-        div[data-testid="stPopover"] > button {{
-            width: 60px !important;
-            height: 60px !important;
-            min-width: 60px !important;
-            min-height: 60px !important;
-            border-radius: 14px !important;
-            padding: 0 !important;
-            border: 1.5px solid #cbd5e1 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background-color: #ffffff !important;
-            background: #ffffff !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-            cursor: pointer !important;
-            color: transparent !important;
-        }}
-
-        div[data-testid="stChatInput"] textarea {{
-            color: #ffffff !important;
-            -webkit-text-fill-color: #ffffff !important;
-        }}
-/* ========================================================================= */
         /* BOTTOM-RIGHT CHATBOT: PURE WHITE BOX & LARGE ROBOT ICON                   */
         /* ========================================================================= */
         div[data-testid="stPopover"] {{
@@ -242,7 +209,45 @@ def apply_global_styles():
             display: none !important;
             visibility: hidden !important;
         }}
-       
+
+        /* ========================================================================= */
+        /* CHAT INPUT TEXT VISIBILITY FIX                                            */
+        /* ========================================================================= */
+        div[data-testid="stChatInput"] textarea,
+        div[data-testid="stChatInput"] input,
+        textarea[aria-label*="chat" i] {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            background-color: #ffffff !important;
+        }}
+
+        div[data-testid="stChatInput"] {{
+            background-color: #ffffff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 12px !important;
+        }}
+        /* ========================================================================= */
+        /* CHATBOT POPOVER & MESSAGE TEXT COLOR: SOLID BLACK                         */
+        /* ========================================================================= */
+        div[data-testid="stPopoverBody"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }}
+
+        div[data-testid="stPopoverBody"] [data-testid="stChatMessage"] {{
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            color: #000000 !important;
+        }}
+
+        div[data-testid="stPopoverBody"] [data-testid="stChatMessage"] p,
+        div[data-testid="stPopoverBody"] [data-testid="stChatMessage"] span,
+        div[data-testid="stPopoverBody"] [data-testid="stChatMessage"] div,
+        div[data-testid="stPopoverBody"] .stMarkdown p {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,

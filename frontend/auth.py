@@ -23,7 +23,6 @@ def render_login():
     st.markdown(
         """
         <style>
-        /* Force solid black text for auth labels, headings, tabs, and inputs */
         div[data-testid="stVerticalBlock"] label p,
         div[data-testid="stVerticalBlock"] span,
         div[data-testid="stVerticalBlock"] h1,
@@ -35,7 +34,6 @@ def render_login():
             font-weight: 700 !important;
         }
 
-        /* Style Submit Buttons as Solid White Boxes with Bold Black Text */
         div[data-testid="stButton"] button {
             background-color: #ffffff !important;
             background: #ffffff !important;
@@ -69,12 +67,10 @@ def render_login():
             unsafe_allow_html=True,
         )
 
-        # Clean White Box Container for Auth Forms
         with st.container(border=True):
             st.markdown(
                 """
                 <style>
-                /* Ensure container background is pure white */
                 div[data-testid="stVerticalBlock"] > div > div[data-testid="stVerticalBlock"] {
                     background-color: #ffffff !important;
                 }
@@ -83,14 +79,10 @@ def render_login():
                 unsafe_allow_html=True,
             )
 
-            # Tabs without icons ("Sign In" and "Create Account")
             auth_tab_login, auth_tab_signup = st.tabs(
                 ["Sign In", "Create Account"]
             )
 
-            # ==========================================
-            # SIGN IN TAB
-            # ==========================================
             with auth_tab_login:
                 st.markdown(
                     "<div style='height: 10px;'></div>", unsafe_allow_html=True
@@ -131,9 +123,6 @@ def render_login():
                             "Invalid email address or password. Please try again."
                         )
 
-            # ==========================================
-            # SIGN UP TAB
-            # ==========================================
             with auth_tab_signup:
                 st.markdown(
                     "<div style='height: 10px;'></div>", unsafe_allow_html=True
@@ -197,6 +186,7 @@ def render_sidebar():
             unsafe_allow_html=True,
         )
 
+        # "Chat Assistant" successfully removed from navigation list
         selected_page = st.radio(
             "Navigation",
             [
@@ -206,7 +196,6 @@ def render_sidebar():
                 "Prioritized Initiatives",
                 "PRD Generator",
                 "Roadmap Planner",
-                "Chat Assistant",
             ],
             label_visibility="collapsed",
         )
@@ -220,7 +209,6 @@ def render_sidebar():
             unsafe_allow_html=True,
         )
 
-        # User Profile Box in Sidebar
         user_name = st.session_state.get(
             "user_name", "pradeepthi297"
         )

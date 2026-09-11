@@ -22,6 +22,29 @@ def render_roadmap():
     st.title("Roadmap Planner")
     st.caption("Plan quarters and track initiative execution status.")
 
+    # High-specificity CSS to force every roadmap card into a solid white box
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 14px !important;
+            padding: 1.25rem !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+            margin-bottom: 1rem !important;
+        }
+        
+        div[data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] * {
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     df = fetch_roadmap_db()
     if df.empty:
         st.info("No roadmap records were found in the database.")

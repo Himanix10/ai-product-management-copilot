@@ -32,11 +32,10 @@ st.set_page_config(
 apply_global_styles()
 init_auth()
 
-
 def render_fixed_right_chatbot():
     """Renders the bottom-right chatbot button as a solid white box
 
-    containing the robot icon, with a clean popover body.
+    containing the robot icon, with a clean popover body and active conversation history.
     """
     robot_svg = (
         "data:image/svg+xml;utf8,"
@@ -118,6 +117,13 @@ def render_fixed_right_chatbot():
             padding: 1.25rem !important;
         }}
 
+        /* Force chat input text to be clearly visible */
+        div[data-testid="stPopoverBody"] div[data-testid="stChatInput"] textarea {{
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            background-color: #ffffff !important;
+        }}
+
         div[data-testid="stPopoverBody"] [data-testid="stChatMessage"] {{
             background-color: #f8fafc !important;
             border: 1px solid #e2e8f0 !important;
@@ -149,29 +155,32 @@ def render_fixed_right_chatbot():
             unsafe_allow_html=True,
         )
 
-        chat_history = ConversationMemory.get_history()
+        user_identifier = st.session_state.get("user_email", "pradeepthi297@gmail.com")
+        
+        # Load conversation history from SQLite
+        chat_history = ConversationMemory.get_history(user={"id": user_identifier})
+
         if not chat_history:
             with st.chat_message("assistant", avatar="🤖"):
                 st.write(
                     "Hi! I am your AI Workspace Copilot. How can I assist you today?"
                 )
         else:
-            for message in chat_history[-6:]:
+            for message in chat_history:
                 avatar = "🤖" if message["role"] == "assistant" else "👤"
                 with st.chat_message(message["role"], avatar=avatar):
                     st.write(message["content"])
 
         if prompt := st.chat_input(
-            "Ask a question...", key="fixed_video_chat_input"
+            "Ask a question...", key="fixed_right_chatbot_input_bar"
         ):
-            ConversationMemory.add_message("user", prompt)
+            ConversationMemory.add_message("user", prompt, user={"id": user_identifier})
             chat_agent = ChatAgent()
-            res = chat_agent.execute({"prompt": prompt})
+            res = chat_agent.execute({"prompt": prompt, "user": {"id": user_identifier}})
             bot_reply = res.get("response", "I could not process that request.")
-            ConversationMemory.add_message("assistant", bot_reply)
+            ConversationMemory.add_message("assistant", bot_reply, user={"id": user_identifier})
             st.rerun()
-
-
+            
 # Application Routing
 if not st.session_state.get("authenticated", False):
     render_login()
@@ -198,8 +207,6 @@ else:
         render_prd_generator()
     elif selected_page == "Roadmap Planner":
         render_roadmap()
-    elif selected_page == "Chat Assistant":
-        render_chat_assistant()
     else:
         render_dashboard_overview()
 
